@@ -1,0 +1,148 @@
+# Aegis bundled blocklist — ads, trackers, YouTube ad servers
+# Format: plain domain, one per line. Comments start with #.
+
+# ── Google / YouTube Ads ─────────────────────────────────────────────────────
+# YouTube ad delivery — MOST IMPORTANT for YouTube ad blocking
+googlevideo.com
+# NOTE: do NOT block googlevideo.com entirely or video playback breaks.
+# Block the specific ad-serving subdomains instead:
+r1---sn-ab5l6ne6.googlevideo.com
+r2---sn-ab5l6ne6.googlevideo.com
+# The pattern r\d+---sn-*.googlevideo.com serves ads;
+# shouldBlock() parent-domain check handles all r*---sn-*.googlevideo.com
+# via the blocklist entry below:
+# We add the ad-specific subdomains via the blocklist updater (StevenBlack).
+# Specific Google ad domains:
+googleadservices.com
+doubleclick.net
+googlesyndication.com
+google-analytics.com
+googletagmanager.com
+googletagservices.com
+adservice.google.com
+adservice.google.co.uk
+adservice.google.com.au
+adservice.google.ca
+adservice.google.co.in
+adservice.google.de
+adservice.google.fr
+adservice.google.co.jp
+adservice.google.co.uk
+ads.youtube.com
+static.doubleclick.net
+stats.g.doubleclick.net
+cm.g.doubleclick.net
+ad.doubleclick.net
+pubads.g.doubleclick.net
+securepubads.g.doubleclick.net
+pagead2.googlesyndication.com
+pagead.googlesyndication.com
+tpc.googlesyndication.com
+partner.googleadservices.com
+www.googleadservices.com
+imasdk.googleapis.com
+# YouTube ad measurement/tracking
+yt3.ggpht.com
+i.ytimg.com
+s.youtube.com
+youtubei.googleapis.com
+
+# ── Facebook / Meta Ads ───────────────────────────────────────────────────────
+ads.facebook.com
+an.facebook.com
+connect.facebook.net
+pixel.facebook.com
+# NOTE: do NOT block graph.facebook.com (Messenger needs it)
+# do NOT block www.facebook.com, m.facebook.com, edge-mqtt.facebook.com
+
+# ── Twitter/X Ads ─────────────────────────────────────────────────────────────
+analytics.twitter.com
+ads-twitter.com
+static.ads-twitter.com
+ads.twitter.com
+t.co
+syndication.twitter.com
+
+# ── LinkedIn Ads ──────────────────────────────────────────────────────────────
+ads.linkedin.com
+px.ads.linkedin.com
+
+# ── TikTok Ads ────────────────────────────────────────────────────────────────
+analytics.tiktok.com
+ads.tiktok.com
+log.tiktok.com
+mon.tiktok.com
+bnc.lt
+
+# ── Snapchat Ads ──────────────────────────────────────────────────────────────
+analytics.snapchat.com
+ads.snapchat.com
+sc-static.net
+
+# ── Programmatic Ad Networks ──────────────────────────────────────────────────
+casalemedia.com
+rubiconproject.com
+openx.net
+pubmatic.com
+indexexchange.com
+appnexus.com
+adsrvr.org
+taboola.com
+outbrain.com
+revcontent.com
+advertising.com
+media.net
+criteo.com
+criteoresearch.com
+amazon-adsystem.com
+assoc-amazon.com
+bat.bing.com
+ads.microsoft.com
+
+# ── Mobile Ad Networks ────────────────────────────────────────────────────────
+adcolony.com
+inmobi.com
+admob.com
+flurry.com
+applovin.com
+chartboost.com
+ironsrc.com
+vungle.com
+startapp.com
+airpush.com
+leadbolt.com
+smaato.com
+mopub.com
+mobvista.com
+mintegral.com
+
+# ── Analytics / Tracking ──────────────────────────────────────────────────────
+scorecardresearch.com
+comscore.com
+quantserve.com
+addthis.com
+clicktale.com
+hotjar.com
+fullstory.com
+mixpanel.com
+amplitude.com
+optimizely.com
+mouseflow.com
+crazyegg.com
+kissmetrics.com
+
+# ── Attribution / App Analytics ───────────────────────────────────────────────
+adjust.com
+appsflyer.com
+kochava.com
+branch.io
+onesignal.com
+pushwoosh.com
+
+# ── Affiliate / Tracking ──────────────────────────────────────────────────────
+tradedoubler.com
+awin.com
+
+# ── Yahoo Ads ─────────────────────────────────────────────────────────────────
+ads.yahoo.com
+gemini.yahoo.com
