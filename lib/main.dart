@@ -5,10 +5,6 @@ import 'screens/home_screen.dart';
 import 'screens/log_screen.dart';
 import 'screens/debug_screen.dart';
 import 'screens/stats_screen.dart';
-import 'screens/dns_settings_screen.dart';
-import 'screens/custom_rules_screen.dart';
-import 'screens/exclusions_screen.dart';
-
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(

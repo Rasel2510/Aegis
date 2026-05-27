@@ -15,7 +15,8 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Aegis', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26)),
+        title: const Text('Aegis',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26)),
         actions: [
           IconButton(
             icon: Icon(provider.darkMode ? Icons.light_mode : Icons.dark_mode),
@@ -25,23 +26,35 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.tune),
             tooltip: 'Settings',
             onSelected: (route) {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => switch (route) {
-                'dns'       => const DnsSettingsScreen(),
-                'rules'     => const CustomRulesScreen(),
-                'exclusions'=> const ExclusionsScreen(),
-                _           => const DnsSettingsScreen(),
-              }));
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => switch (route) {
+                            'dns' => const DnsSettingsScreen(),
+                            'rules' => const CustomRulesScreen(),
+                            'exclusions' => const ExclusionsScreen(),
+                            _ => const DnsSettingsScreen(),
+                          }));
             },
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'dns',
-                child: ListTile(dense: true, leading: Icon(Icons.lock_outlined),
-                    title: Text('DNS & HTTPS'))),
-              PopupMenuItem(value: 'rules',
-                child: ListTile(dense: true, leading: Icon(Icons.rule),
-                    title: Text('Custom Rules'))),
-              PopupMenuItem(value: 'exclusions',
-                child: ListTile(dense: true, leading: Icon(Icons.android),
-                    title: Text('App Exclusions'))),
+              PopupMenuItem(
+                  value: 'dns',
+                  child: ListTile(
+                      dense: true,
+                      leading: Icon(Icons.lock_outlined),
+                      title: Text('DNS & HTTPS'))),
+              PopupMenuItem(
+                  value: 'rules',
+                  child: ListTile(
+                      dense: true,
+                      leading: Icon(Icons.rule),
+                      title: Text('Custom Rules'))),
+              PopupMenuItem(
+                  value: 'exclusions',
+                  child: ListTile(
+                      dense: true,
+                      leading: Icon(Icons.android),
+                      title: Text('App Exclusions'))),
             ],
           ),
         ],
@@ -84,27 +97,35 @@ class _BigShieldButton extends StatelessWidget {
     return Column(
       children: [
         GestureDetector(
-          onTap: isLoading ? null : () async {
-            final granted = await provider.toggleBlocking();
-            if (!granted && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('VPN permission denied. Please allow to enable Aegis.'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          },
+          onTap: isLoading
+              ? null
+              : () async {
+                  final granted = await provider.toggleBlocking();
+                  if (!granted && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'VPN permission denied. Please allow to enable Aegis.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 400),
             width: 190,
             height: 190,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.08),
+              color: color.withValues(alpha: 0.08),
               border: Border.all(color: color, width: 4),
               boxShadow: isOn
-                  ? [BoxShadow(color: color.withOpacity(0.35), blurRadius: 50, spreadRadius: 12)]
+                  ? [
+                      BoxShadow(
+                          color: color.withValues(alpha: 0.35),
+                          blurRadius: 50,
+                          spreadRadius: 12)
+                    ]
                   : [],
             ),
             child: isLoading
@@ -112,15 +133,20 @@ class _BigShieldButton extends StatelessWidget {
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(isOn ? Icons.shield : Icons.shield_outlined, size: 64, color: color),
+                      Icon(isOn ? Icons.shield : Icons.shield_outlined,
+                          size: 64, color: color),
                       const SizedBox(height: 8),
                       Text(
                         isOn ? 'ON' : 'OFF',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
+                        style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: color),
                       ),
                       Text(
                         isOn ? 'Tap to stop' : 'Tap to start',
-                        style: TextStyle(fontSize: 12, color: color.withOpacity(0.7)),
+                        style: TextStyle(
+                            fontSize: 12, color: color.withValues(alpha: 0.7)),
                       ),
                     ],
                   ),
@@ -131,7 +157,9 @@ class _BigShieldButton extends StatelessWidget {
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
           decoration: BoxDecoration(
-            color: isOn ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+            color: isOn
+                ? Colors.green.withValues(alpha: 0.1)
+                : Colors.red.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -141,7 +169,9 @@ class _BigShieldButton extends StatelessWidget {
                   size: 16, color: isOn ? Colors.green : Colors.red),
               const SizedBox(width: 6),
               Text(
-                isOn ? 'VPN Active — Ads are being blocked' : 'VPN Off — Ads not blocked',
+                isOn
+                    ? 'VPN Active — Ads are being blocked'
+                    : 'VPN Off — Ads not blocked',
                 style: TextStyle(
                   fontSize: 13,
                   color: isOn ? Colors.green : Colors.red,
@@ -200,7 +230,11 @@ class _StatCard extends StatelessWidget {
   final String label;
   final IconData icon;
   final Color color;
-  const _StatCard({required this.value, required this.label, required this.icon, required this.color});
+  const _StatCard(
+      {required this.value,
+      required this.label,
+      required this.icon,
+      required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -212,7 +246,8 @@ class _StatCard extends StatelessWidget {
             Icon(icon, color: color, size: 20),
             const SizedBox(height: 6),
             Text(value,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 16, color: color),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
             Text(label,
@@ -246,10 +281,11 @@ class _BlocklistStatusCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6C63FF).withOpacity(0.1),
+                    color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.download_done, color: Color(0xFF6C63FF), size: 20),
+                  child: const Icon(Icons.download_done,
+                      color: Color(0xFF6C63FF), size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -257,7 +293,8 @@ class _BlocklistStatusCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Auto-Updated Blocklist',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
                       Text(
                         isLoaded
                             ? '$domainCount domains loaded'
@@ -310,7 +347,7 @@ class _BlocklistStatusCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.08),
+                color: Colors.green.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -337,16 +374,22 @@ class _SourceRow extends StatelessWidget {
   final String name;
   final String domains;
   final Color color;
-  const _SourceRow({required this.name, required this.domains, required this.color});
+  const _SourceRow(
+      {required this.name, required this.domains, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 8),
         Expanded(child: Text(name, style: const TextStyle(fontSize: 12))),
-        Text(domains, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+        Text(domains,
+            style: TextStyle(
+                fontSize: 12, color: color, fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -394,7 +437,9 @@ class _WhatIsBlockedCard extends StatelessWidget {
                       Text(item.$1, style: const TextStyle(fontSize: 13)),
                       const Spacer(),
                       Icon(
-                        isBlocking ? Icons.check_circle : Icons.radio_button_unchecked,
+                        isBlocking
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
                         size: 16,
                         color: isBlocking ? Colors.green : Colors.grey,
                       ),
@@ -452,10 +497,8 @@ class _LiveLogShortcut extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final recentBlocked = provider.log.reversed
-        .where((e) => e.blocked)
-        .take(3)
-        .toList();
+    final recentBlocked =
+        provider.log.reversed.where((e) => e.blocked).take(3).toList();
 
     return Card(
       child: InkWell(
@@ -475,11 +518,11 @@ class _LiveLogShortcut extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.dns_outlined,
-                    color: Colors.red, size: 20),
+                child:
+                    const Icon(Icons.dns_outlined, color: Colors.red, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -494,15 +537,13 @@ class _LiveLogShortcut extends StatelessWidget {
                         provider.isBlocking
                             ? 'Waiting for DNS queries...'
                             : 'Start VPN to see activity',
-                        style: const TextStyle(
-                            fontSize: 12, color: Colors.grey),
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.grey),
                       )
                     else
                       Text(
                         recentBlocked.map((e) => e.domain).join(', '),
-                        style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.red),
+                        style: const TextStyle(fontSize: 11, color: Colors.red),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

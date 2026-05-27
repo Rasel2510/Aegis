@@ -15,14 +15,14 @@ class LogScreen extends StatefulWidget {
 }
 
 class _LogScreenState extends State<LogScreen> {
-  final List<LogEntry> _entries   = [];
+  final List<LogEntry> _entries = [];
   StreamSubscription<LogEntry>? _sub;
-  final _scrollController          = ScrollController();
+  final _scrollController = ScrollController();
 
-  bool _autoScroll  = true;
+  bool _autoScroll = true;
   bool _showBlocked = true;
   bool _showAllowed = true;
-  String _filter    = '';
+  String _filter = '';
 
   static const _maxEntries = 500;
 
@@ -65,8 +65,8 @@ class _LogScreenState extends State<LogScreen> {
     return _entries.where((e) {
       if (e.blocked && !_showBlocked) return false;
       if (!e.blocked && !_showAllowed) return false;
-      if (_filter.isNotEmpty &&
-          !e.domain.contains(_filter.toLowerCase())) return false;
+      if (_filter.isNotEmpty && !e.domain.contains(_filter.toLowerCase()))
+        return false;
       return true;
     }).toList();
   }
@@ -80,8 +80,8 @@ class _LogScreenState extends State<LogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme    = Theme.of(context);
-    final isDark   = theme.brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final filtered = _filtered;
 
     final blockedCount = _entries.where((e) => e.blocked).length;
@@ -169,8 +169,9 @@ class _LogScreenState extends State<LogScreen> {
           // ── Log list ───────────────────────────────────────────────────
           Expanded(
             child: filtered.isEmpty
-                ? _EmptyState(isFiltered: _filter.isNotEmpty ||
-                    !_showBlocked || !_showAllowed)
+                ? _EmptyState(
+                    isFiltered:
+                        _filter.isNotEmpty || !_showBlocked || !_showAllowed)
                 : ListView.builder(
                     controller: _scrollController,
                     itemCount: filtered.length,
@@ -203,12 +204,14 @@ class _SummaryBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest
-          .withOpacity(0.4),
+      color: Theme.of(context)
+          .colorScheme
+          .surfaceContainerHighest
+          .withValues(alpha: 0.4),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          _Stat(label: 'Total',   value: '$total',   color: Colors.grey),
+          _Stat(label: 'Total', value: '$total', color: Colors.grey),
           const SizedBox(width: 20),
           _Stat(label: 'Blocked', value: '$blocked', color: Colors.red),
           const SizedBox(width: 20),
@@ -239,8 +242,7 @@ class _Stat extends StatelessWidget {
         Text(value,
             style: TextStyle(
                 fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-        Text(label,
-            style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
       ],
     );
   }
@@ -268,9 +270,9 @@ class _FilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: active ? color.withOpacity(0.15) : Colors.transparent,
+          color: active ? color.withValues(alpha: 0.15) : Colors.transparent,
           border: Border.all(
-              color: active ? color : Colors.grey.withOpacity(0.4)),
+              color: active ? color : Colors.grey.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
@@ -296,9 +298,9 @@ class _LogTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final blocked = entry.blocked;
-    final color   = blocked ? Colors.red : Colors.green;
-    final bg      = blocked
-        ? Colors.red.withOpacity(isDark ? 0.07 : 0.04)
+    final color = blocked ? Colors.red : Colors.green;
+    final bg = blocked
+        ? Colors.red.withValues(alpha: isDark ? 0.07 : 0.04)
         : Colors.transparent;
 
     final hh = entry.time.hour.toString().padLeft(2, '0');
@@ -322,9 +324,9 @@ class _LogTile extends StatelessWidget {
           children: [
             // Indicator dot
             Container(
-              width: 8, height: 8,
-              decoration: BoxDecoration(
-                color: color, shape: BoxShape.circle),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 10),
             // Domain
@@ -339,9 +341,7 @@ class _LogTile extends StatelessWidget {
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: blocked
-                          ? (isDark
-                              ? Colors.red.shade300
-                              : Colors.red.shade700)
+                          ? (isDark ? Colors.red.shade300 : Colors.red.shade700)
                           : null,
                     ),
                     maxLines: 1,
@@ -362,8 +362,8 @@ class _LogTile extends StatelessWidget {
             // Timestamp
             Text(
               '$hh:$mm:$ss',
-              style: const TextStyle(fontSize: 11, color: Colors.grey,
-                  fontFamily: 'monospace'),
+              style: const TextStyle(
+                  fontSize: 11, color: Colors.grey, fontFamily: 'monospace'),
             ),
           ],
         ),
@@ -385,17 +385,13 @@ class _EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isFiltered
-                ? Icons.search_off
-                : Icons.dns_outlined,
+            isFiltered ? Icons.search_off : Icons.dns_outlined,
             size: 56,
-            color: Colors.grey.withOpacity(0.4),
+            color: Colors.grey.withValues(alpha: 0.4),
           ),
           const SizedBox(height: 12),
           Text(
-            isFiltered
-                ? 'No entries match your filter'
-                : 'No queries yet',
+            isFiltered ? 'No entries match your filter' : 'No queries yet',
             style: const TextStyle(color: Colors.grey, fontSize: 14),
           ),
           if (!isFiltered) ...[

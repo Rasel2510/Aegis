@@ -3,32 +3,60 @@ import '../services/vpn_service.dart';
 
 class DnsSettingsScreen extends StatefulWidget {
   const DnsSettingsScreen({super.key});
-  @override State<DnsSettingsScreen> createState() => _DnsSettingsScreenState();
+  @override
+  State<DnsSettingsScreen> createState() => _DnsSettingsScreenState();
 }
 
 class _DnsSettingsScreenState extends State<DnsSettingsScreen> {
   String? _selectedUrl;
   final _customCtrl = TextEditingController();
   bool _httpsEnabled = false;
-  bool _caInstalled  = false;
+  bool _caInstalled = false;
 
   static const _providers = [
-    (label: 'Disabled (plain UDP)',   url: null,                             desc: 'Direct UDP to 1.1.1.1. Fast, but ISP can see queries.'),
-    (label: 'Cloudflare (1.1.1.1)',   url: 'https://1.1.1.1/dns-query',     desc: 'Privacy-focused. Fast. No logging.'),
-    (label: 'Google (8.8.8.8)',       url: 'https://8.8.8.8/dns-query',     desc: 'Reliable. Google logs queries for 48h.'),
-    (label: 'AdGuard DNS',            url: 'https://dns.adguard.com/dns-query', desc: 'Blocks ads at DNS level in addition to Aegis.'),
-    (label: 'NextDNS',                url: 'https://dns.nextdns.io/dns-query',  desc: 'Configurable. Free tier available.'),
+    (
+      label: 'Disabled (plain UDP)',
+      url: null,
+      desc: 'Direct UDP to 1.1.1.1. Fast, but ISP can see queries.'
+    ),
+    (
+      label: 'Cloudflare (1.1.1.1)',
+      url: 'https://1.1.1.1/dns-query',
+      desc: 'Privacy-focused. Fast. No logging.'
+    ),
+    (
+      label: 'Google (8.8.8.8)',
+      url: 'https://8.8.8.8/dns-query',
+      desc: 'Reliable. Google logs queries for 48h.'
+    ),
+    (
+      label: 'AdGuard DNS',
+      url: 'https://dns.adguard.com/dns-query',
+      desc: 'Blocks ads at DNS level in addition to Aegis.'
+    ),
+    (
+      label: 'NextDNS',
+      url: 'https://dns.nextdns.io/dns-query',
+      desc: 'Configurable. Free tier available.'
+    ),
   ];
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   Future<void> _load() async {
-    final url      = await VpnService.getDohUrl();
-    final https    = await VpnService.getHttpsFiltering();
+    final url = await VpnService.getDohUrl();
+    final https = await VpnService.getHttpsFiltering();
     final caInstalled = await VpnService.isCaInstalled();
     if (!mounted) return;
-    setState(() { _selectedUrl = url; _httpsEnabled = https; _caInstalled = caInstalled; });
+    setState(() {
+      _selectedUrl = url;
+      _httpsEnabled = https;
+      _caInstalled = caInstalled;
+    });
   }
 
   Future<void> _save() async {
@@ -45,72 +73,90 @@ class _DnsSettingsScreenState extends State<DnsSettingsScreen> {
   }
 
   @override
-  void dispose() { _customCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _customCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('DNS Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('DNS Settings',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: ListView(padding: const EdgeInsets.all(16), children: [
-
         // HTTPS Filtering section
         _sectionHeader('HTTPS Filtering', Icons.https),
         const SizedBox(height: 8),
-        Card(child: Padding(
+        Card(
+            child: Padding(
           padding: const EdgeInsets.all(14),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Enable HTTPS Filtering',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text('Blocks encrypted ads (requires CA cert)',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-              ])),
-              Switch(value: _httpsEnabled,
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    const Text('Enable HTTPS Filtering',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('Blocks encrypted ads (requires CA cert)',
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey.shade600)),
+                  ])),
+              Switch(
+                  value: _httpsEnabled,
                   onChanged: (v) => setState(() => _httpsEnabled = v)),
             ]),
             if (_httpsEnabled && !_caInstalled) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1),
-                    border: Border.all(color: Colors.orange.withOpacity(0.4)),
+                decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    border:
+                        Border.all(color: Colors.orange.withValues(alpha: 0.4)),
                     borderRadius: BorderRadius.circular(8)),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Row(children: [
-                    Icon(Icons.warning_amber, color: Colors.orange, size: 16),
-                    SizedBox(width: 6),
-                    Text('CA Certificate Required',
-                        style: TextStyle(fontWeight: FontWeight.bold,
-                            color: Colors.orange, fontSize: 13)),
-                  ]),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'To filter HTTPS traffic you must install Aegis\'s CA certificate:\n'
-                    '1. Tap "Export & Install" below\n'
-                    '2. Open the downloaded file\n'
-                    '3. Settings → Security → Install Certificate → CA Certificate',
-                    style: TextStyle(fontSize: 12, height: 1.6)),
-                  const SizedBox(height: 10),
-                  FilledButton.icon(
-                    onPressed: () async {
-                      final path = await VpnService.exportCaCert();
-                      if (path != null && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text('Cert saved to: $path'),
-                          duration: const Duration(seconds: 4),
-                        ));
-                      }
-                    },
-                    icon: const Icon(Icons.download, size: 16),
-                    label: const Text('Export & Install'),
-                    style: FilledButton.styleFrom(backgroundColor: Colors.orange),
-                  ),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(children: [
+                        Icon(Icons.warning_amber,
+                            color: Colors.orange, size: 16),
+                        SizedBox(width: 6),
+                        Text('CA Certificate Required',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange,
+                                fontSize: 13)),
+                      ]),
+                      const SizedBox(height: 8),
+                      const Text(
+                          'To filter HTTPS traffic you must install Aegis\'s CA certificate:\n'
+                          '1. Tap "Export & Install" below\n'
+                          '2. Open the downloaded file\n'
+                          '3. Settings → Security → Install Certificate → CA Certificate',
+                          style: TextStyle(fontSize: 12, height: 1.6)),
+                      const SizedBox(height: 10),
+                      FilledButton.icon(
+                        onPressed: () async {
+                          final path = await VpnService.exportCaCert();
+                          if (path != null && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('Cert saved to: $path'),
+                              duration: const Duration(seconds: 4),
+                            ));
+                          }
+                        },
+                        icon: const Icon(Icons.download, size: 16),
+                        label: const Text('Export & Install'),
+                        style: FilledButton.styleFrom(
+                            backgroundColor: Colors.orange),
+                      ),
+                    ]),
               ),
             ],
             if (_httpsEnabled && _caInstalled) ...[
@@ -128,47 +174,58 @@ class _DnsSettingsScreenState extends State<DnsSettingsScreen> {
         const SizedBox(height: 24),
         _sectionHeader('DNS-over-HTTPS', Icons.lock_outlined),
         const SizedBox(height: 8),
-        Card(child: Column(children: [
+        Card(
+            child: Column(children: [
           ..._providers.map((p) => RadioListTile<String?>(
-            dense: true,
-            title: Text(p.label, style: const TextStyle(fontSize: 13)),
-            subtitle: Text(p.desc, style: const TextStyle(fontSize: 11)),
-            value: p.url,
-            groupValue: _selectedUrl,
-            onChanged: (v) => setState(() => _selectedUrl = v),
-          )),
+                dense: true,
+                title: Text(p.label, style: const TextStyle(fontSize: 13)),
+                subtitle: Text(p.desc, style: const TextStyle(fontSize: 11)),
+                value: p.url,
+                groupValue: _selectedUrl,
+                onChanged: (v) => setState(() => _selectedUrl = v),
+              )),
           RadioListTile<String?>(
             dense: true,
             title: const Text('Custom', style: TextStyle(fontSize: 13)),
-            subtitle: const Text('Enter your own DoH endpoint', style: TextStyle(fontSize: 11)),
+            subtitle: const Text('Enter your own DoH endpoint',
+                style: TextStyle(fontSize: 11)),
             value: 'custom',
-            groupValue: (_providers.any((p) => p.url == _selectedUrl)) ? _selectedUrl : 'custom',
+            groupValue: (_providers.any((p) => p.url == _selectedUrl))
+                ? _selectedUrl
+                : 'custom',
             onChanged: (v) => setState(() => _selectedUrl = v),
           ),
-          if (!_providers.any((p) => p.url == _selectedUrl)) Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: TextField(
-              controller: _customCtrl,
-              decoration: const InputDecoration(
-                hintText: 'https://your-doh-server/dns-query',
-                border: OutlineInputBorder(), isDense: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          if (!_providers.any((p) => p.url == _selectedUrl))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: TextField(
+                controller: _customCtrl,
+                decoration: const InputDecoration(
+                  hintText: 'https://your-doh-server/dns-query',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                ),
+                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                autocorrect: false,
               ),
-              style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-              autocorrect: false,
             ),
-          ),
         ])),
       ]),
     );
   }
 
   Widget _sectionHeader(String title, IconData icon) => Row(children: [
-    Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
-    const SizedBox(width: 8),
-    Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold,
-        letterSpacing: 0.5, color: Theme.of(context).colorScheme.primary)),
-  ]);
+        Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 8),
+        Text(title,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+                color: Theme.of(context).colorScheme.primary)),
+      ]);
 }
 
 extension on String {

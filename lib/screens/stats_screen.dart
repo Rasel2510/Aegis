@@ -3,31 +3,42 @@ import '../services/vpn_service.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
-  @override State<StatsScreen> createState() => _StatsScreenState();
+  @override
+  State<StatsScreen> createState() => _StatsScreenState();
 }
 
 class _StatsScreenState extends State<StatsScreen> {
   List<Map<String, dynamic>> _daily = [];
-  List<Map<String, dynamic>> _top   = [];
+  List<Map<String, dynamic>> _top = [];
   bool _loading = true;
 
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   Future<void> _load() async {
     setState(() => _loading = true);
     final daily = await VpnService.getStats();
-    final top   = await VpnService.getTopDomains();
+    final top = await VpnService.getTopDomains();
     if (!mounted) return;
-    setState(() { _daily = daily; _top = top; _loading = false; });
+    setState(() {
+      _daily = daily;
+      _top = top;
+      _loading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Statistics', style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _load)],
+        title: const Text('Statistics',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _load)
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -42,21 +53,26 @@ class _StatsScreenState extends State<StatsScreen> {
                   const SizedBox(height: 8),
                   ..._top.map((e) => _TopDomainTile(
                       domain: e['domain'] as String,
-                      count:  e['count']  as int,
-                      max:    (_top.isNotEmpty ? _top.first['count'] as int : 1))),
+                      count: e['count'] as int,
+                      max: (_top.isNotEmpty ? _top.first['count'] as int : 1))),
                 ]),
     );
   }
 
   Widget _sectionLabel(String t) => Text(t,
-      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
-          letterSpacing: 0.5, color: Theme.of(context).colorScheme.primary));
+      style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+          color: Theme.of(context).colorScheme.primary));
 
-  Widget _empty() => const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-    Icon(Icons.bar_chart, size: 56, color: Colors.grey),
-    SizedBox(height: 12),
-    Text('No stats yet — start the VPN', style: TextStyle(color: Colors.grey)),
-  ]));
+  Widget _empty() => const Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.bar_chart, size: 56, color: Colors.grey),
+        SizedBox(height: 12),
+        Text('No stats yet — start the VPN',
+            style: TextStyle(color: Colors.grey)),
+      ]));
 }
 
 class _BarChart extends StatelessWidget {
@@ -66,9 +82,11 @@ class _BarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) return const SizedBox.shrink();
-    final maxBlocked = data.map((d) => d['blocked'] as int).reduce((a, b) => a > b ? a : b);
+    final maxBlocked =
+        data.map((d) => d['blocked'] as int).reduce((a, b) => a > b ? a : b);
 
-    return Card(child: Padding(
+    return Card(
+        child: Padding(
       padding: const EdgeInsets.all(16),
       child: Column(children: [
         SizedBox(
@@ -78,23 +96,29 @@ class _BarChart extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: data.reversed.take(7).toList().reversed.map((day) {
               final blocked = day['blocked'] as int;
-              final frac    = maxBlocked > 0 ? blocked / maxBlocked : 0.0;
-              final label   = (day['date'] as String).substring(5); // MM-DD
-              return Expanded(child: Padding(
+              final frac = maxBlocked > 0 ? blocked / maxBlocked : 0.0;
+              final label = (day['date'] as String).substring(5); // MM-DD
+              return Expanded(
+                  child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-                  if (blocked > 0) Text(
-                    blocked > 999 ? '${(blocked/1000).toStringAsFixed(1)}k' : '$blocked',
-                    style: const TextStyle(fontSize: 8, color: Colors.red)),
+                child:
+                    Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  if (blocked > 0)
+                    Text(
+                        blocked > 999
+                            ? '${(blocked / 1000).toStringAsFixed(1)}k'
+                            : '$blocked',
+                        style: const TextStyle(fontSize: 8, color: Colors.red)),
                   const SizedBox(height: 2),
                   Container(
                     height: (frac * 100).clamp(4.0, 100.0),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(3)),
+                        color: Colors.red.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(3)),
                   ),
                   const SizedBox(height: 4),
-                  Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey)),
+                  Text(label,
+                      style: const TextStyle(fontSize: 9, color: Colors.grey)),
                 ]),
               ));
             }).toList(),
@@ -102,10 +126,15 @@ class _BarChart extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(width: 10, height: 10, decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.7), borderRadius: BorderRadius.circular(2))),
+          Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(2))),
           const SizedBox(width: 6),
-          const Text('Blocked per day', style: TextStyle(fontSize: 11, color: Colors.grey)),
+          const Text('Blocked per day',
+              style: TextStyle(fontSize: 11, color: Colors.grey)),
         ]),
       ]),
     ));
@@ -115,7 +144,8 @@ class _BarChart extends StatelessWidget {
 class _TopDomainTile extends StatelessWidget {
   final String domain;
   final int count, max;
-  const _TopDomainTile({required this.domain, required this.count, required this.max});
+  const _TopDomainTile(
+      {required this.domain, required this.count, required this.max});
 
   @override
   Widget build(BuildContext context) {
@@ -125,22 +155,27 @@ class _TopDomainTile extends StatelessWidget {
       child: Row(children: [
         const Icon(Icons.block, size: 12, color: Colors.red),
         const SizedBox(width: 8),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(domain, style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+        Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(domain,
+              style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
               overflow: TextOverflow.ellipsis),
           const SizedBox(height: 3),
           ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
-              value: frac, minHeight: 3,
-              backgroundColor: Colors.red.withOpacity(0.1),
+              value: frac,
+              minHeight: 3,
+              backgroundColor: Colors.red.withValues(alpha: 0.1),
               valueColor: const AlwaysStoppedAnimation(Colors.red),
             ),
           ),
         ])),
         const SizedBox(width: 8),
-        Text('$count', style: const TextStyle(fontSize: 12,
-            color: Colors.red, fontWeight: FontWeight.bold)),
+        Text('$count',
+            style: const TextStyle(
+                fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
       ]),
     );
   }

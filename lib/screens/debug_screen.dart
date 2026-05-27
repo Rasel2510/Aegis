@@ -23,26 +23,26 @@ class _DebugScreenState extends State<DebugScreen> {
 
   // ── Domain tester ─────────────────────────────────────────────────────────
   final _domainController = TextEditingController();
-  final _focusNode        = FocusNode();
+  final _focusNode = FocusNode();
   DomainCheckResult? _checkResult;
   bool _checkLoading = false;
 
   // ── Log stats (computed from live stream) ─────────────────────────────────
-  int _totalQueries  = 0;
-  int _totalBlocked  = 0;
+  int _totalQueries = 0;
+  int _totalBlocked = 0;
   final Map<String, int> _topBlocked = {};
   StreamSubscription<LogEntry>? _logSub;
 
   // Built-in test domains
   static const _testDomains = [
-    ('doubleclick.net',          true),
-    ('googlevideo.com',          false),
+    ('doubleclick.net', true),
+    ('googlevideo.com', false),
     ('pagead2.googlesyndication.com', true),
-    ('youtube.com',              false),
-    ('imasdk.googleapis.com',    true),
-    ('facebook.com',             false),
-    ('ads.facebook.com',         true),
-    ('google.com',               false),
+    ('youtube.com', false),
+    ('imasdk.googleapis.com', true),
+    ('facebook.com', false),
+    ('ads.facebook.com', true),
+    ('google.com', false),
   ];
 
   @override
@@ -66,7 +66,10 @@ class _DebugScreenState extends State<DebugScreen> {
     setState(() => _healthLoading = true);
     final h = await VpnService.getHealthStatus();
     if (!mounted) return;
-    setState(() { _health = h; _healthLoading = false; });
+    setState(() {
+      _health = h;
+      _healthLoading = false;
+    });
   }
 
   // ── Domain check ──────────────────────────────────────────────────────────
@@ -74,10 +77,16 @@ class _DebugScreenState extends State<DebugScreen> {
   Future<void> _checkDomain(String domain) async {
     if (domain.trim().isEmpty) return;
     _focusNode.unfocus();
-    setState(() { _checkLoading = true; _checkResult = null; });
+    setState(() {
+      _checkLoading = true;
+      _checkResult = null;
+    });
     final r = await VpnService.checkDomain(domain.trim());
     if (!mounted) return;
-    setState(() { _checkResult = r; _checkLoading = false; });
+    setState(() {
+      _checkResult = r;
+      _checkLoading = false;
+    });
   }
 
   // ── Log subscription ──────────────────────────────────────────────────────
@@ -114,7 +123,8 @@ class _DebugScreenState extends State<DebugScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Debug', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('Debug', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -129,25 +139,23 @@ class _DebugScreenState extends State<DebugScreen> {
           _sectionHeader('System Health', Icons.monitor_heart_outlined),
           const SizedBox(height: 8),
           _HealthCard(health: _health, loading: _healthLoading),
-
           const SizedBox(height: 24),
           _sectionHeader('Domain Tester', Icons.search),
           const SizedBox(height: 8),
           _DomainTesterCard(
             controller: _domainController,
-            focusNode:  _focusNode,
-            result:     _checkResult,
-            loading:    _checkLoading,
-            onCheck:    _checkDomain,
+            focusNode: _focusNode,
+            result: _checkResult,
+            loading: _checkLoading,
+            onCheck: _checkDomain,
             testDomains: _testDomains,
           ),
-
           const SizedBox(height: 24),
           _sectionHeader('Session Stats', Icons.bar_chart),
           const SizedBox(height: 8),
           _StatsCard(
-            total:      _totalQueries,
-            blocked:    _totalBlocked,
+            total: _totalQueries,
+            blocked: _totalBlocked,
             topBlocked: _topBlocked,
           ),
         ],
@@ -213,7 +221,9 @@ class _HealthCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: allGood ? Colors.green.withOpacity(0.4) : Colors.orange.withOpacity(0.4),
+          color: allGood
+              ? Colors.green.withValues(alpha: 0.4)
+              : Colors.orange.withValues(alpha: 0.4),
           width: 1.5,
         ),
       ),
@@ -227,8 +237,8 @@ class _HealthCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
                 color: allGood
-                    ? Colors.green.withOpacity(0.1)
-                    : Colors.orange.withOpacity(0.1),
+                    ? Colors.green.withValues(alpha: 0.1)
+                    : Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -253,9 +263,9 @@ class _HealthCard extends StatelessWidget {
             const SizedBox(height: 14),
 
             // Individual checks
-            _CheckRow('VPN Service',         h.vpnRunning),
+            _CheckRow('VPN Service', h.vpnRunning),
             _CheckRow('DNS Server (port 5053)', h.dnsServerAlive),
-            _CheckRow('Blocklist Loaded',    h.blocklistLoaded,
+            _CheckRow('Blocklist Loaded', h.blocklistLoaded,
                 subtitle: h.domainCount > 0
                     ? '${(h.domainCount / 1000).toStringAsFixed(1)}k domains'
                     : null),
@@ -264,7 +274,7 @@ class _HealthCard extends StatelessWidget {
                     ? '${h.upstreamLatencyMs}ms'
                     : null),
             _CheckRow('Blocks doubleclick.net', h.adDomainBlocked),
-            _CheckRow('Allows youtube.com',  h.safeDomainAllowed),
+            _CheckRow('Allows youtube.com', h.safeDomainAllowed),
 
             if (h.errorMessage != null) ...[
               const SizedBox(height: 10),
@@ -272,13 +282,13 @@ class _HealthCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.08),
+                  color: Colors.red.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   h.errorMessage!,
-                  style: const TextStyle(fontSize: 11,
-                      color: Colors.red, fontFamily: 'monospace'),
+                  style: const TextStyle(
+                      fontSize: 11, color: Colors.red, fontFamily: 'monospace'),
                 ),
               ),
             ],
@@ -314,8 +324,7 @@ class _CheckRow extends StatelessWidget {
                 Text(label, style: const TextStyle(fontSize: 13)),
                 if (subtitle != null)
                   Text(subtitle!,
-                      style: const TextStyle(
-                          fontSize: 11, color: Colors.grey)),
+                      style: const TextStyle(fontSize: 11, color: Colors.grey)),
               ],
             ),
           ),
@@ -373,11 +382,11 @@ class _DomainTesterCard extends StatelessWidget {
                       prefixIcon: Icon(Icons.dns_outlined, size: 18),
                       border: OutlineInputBorder(),
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 12),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                     ),
-                    style: const TextStyle(
-                        fontSize: 13, fontFamily: 'monospace'),
+                    style:
+                        const TextStyle(fontSize: 13, fontFamily: 'monospace'),
                     textInputAction: TextInputAction.search,
                     autocorrect: false,
                     onSubmitted: onCheck,
@@ -385,12 +394,11 @@ class _DomainTesterCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 FilledButton(
-                  onPressed: loading
-                      ? null
-                      : () => onCheck(controller.text),
+                  onPressed: loading ? null : () => onCheck(controller.text),
                   child: loading
                       ? const SizedBox(
-                          width: 16, height: 16,
+                          width: 16,
+                          height: 16,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
                       : const Text('Check'),
@@ -425,16 +433,16 @@ class _DomainTesterCard extends StatelessWidget {
                     onCheck(domain);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: shouldBlock
-                          ? Colors.red.withOpacity(0.08)
-                          : Colors.green.withOpacity(0.08),
+                          ? Colors.red.withValues(alpha: 0.08)
+                          : Colors.green.withValues(alpha: 0.08),
                       border: Border.all(
                         color: shouldBlock
-                            ? Colors.red.withOpacity(0.3)
-                            : Colors.green.withOpacity(0.3),
+                            ? Colors.red.withValues(alpha: 0.3)
+                            : Colors.green.withValues(alpha: 0.3),
                       ),
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -452,9 +460,7 @@ class _DomainTesterCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11,
                             fontFamily: 'monospace',
-                            color: shouldBlock
-                                ? Colors.red
-                                : Colors.green,
+                            color: shouldBlock ? Colors.red : Colors.green,
                           ),
                         ),
                       ],
@@ -477,17 +483,16 @@ class _ResultBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final blocked = result.blocked;
-    final color   = blocked ? Colors.red : Colors.green;
-    final icon    = blocked ? Icons.block : Icons.check_circle;
-    final label   = blocked ? 'BLOCKED' : 'ALLOWED';
+    final color = blocked ? Colors.red : Colors.green;
+    final icon = blocked ? Icons.block : Icons.check_circle;
+    final label = blocked ? 'BLOCKED' : 'ALLOWED';
 
     return GestureDetector(
       onLongPress: () {
         Clipboard.setData(ClipboardData(text: result.domain));
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Copied'),
-              duration: Duration(seconds: 1)),
+              content: Text('Copied'), duration: Duration(seconds: 1)),
         );
       },
       child: AnimatedContainer(
@@ -495,8 +500,8 @@ class _ResultBanner extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          border: Border.all(color: color.withOpacity(0.4)),
+          color: color.withValues(alpha: 0.08),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -523,8 +528,7 @@ class _ResultBanner extends StatelessWidget {
               ),
             ),
             if (result.error != null)
-              const Icon(Icons.error_outline,
-                  color: Colors.orange, size: 18),
+              const Icon(Icons.error_outline, color: Colors.orange, size: 18),
           ],
         ),
       ),
@@ -546,8 +550,8 @@ class _StatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final allowed    = total - blocked;
-    final blockPct   = total > 0 ? (blocked / total * 100) : 0.0;
+    final allowed = total - blocked;
+    final blockPct = total > 0 ? (blocked / total * 100) : 0.0;
 
     // Sort top blocked, take top 8
     final sorted = topBlocked.entries.toList()
@@ -563,7 +567,7 @@ class _StatsCard extends StatelessWidget {
             // Summary row
             Row(
               children: [
-                _MiniStat('Total',   '$total',   Colors.grey),
+                _MiniStat('Total', '$total', Colors.grey),
                 const SizedBox(width: 20),
                 _MiniStat('Blocked', '$blocked', Colors.red),
                 const SizedBox(width: 20),
@@ -587,7 +591,7 @@ class _StatsCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: blockPct / 100,
                   minHeight: 6,
-                  backgroundColor: Colors.green.withOpacity(0.2),
+                  backgroundColor: Colors.green.withValues(alpha: 0.2),
                   valueColor: const AlwaysStoppedAnimation(Colors.red),
                 ),
               ),
@@ -604,30 +608,29 @@ class _StatsCard extends StatelessWidget {
                       letterSpacing: 0.5)),
               const SizedBox(height: 8),
               ...top.map((e) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  children: [
-                    const Icon(Icons.block,
-                        size: 12, color: Colors.red),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        e.key,
-                        style: const TextStyle(
-                            fontSize: 12, fontFamily: 'monospace'),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.block, size: 12, color: Colors.red),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            e.key,
+                            style: const TextStyle(
+                                fontSize: 12, fontFamily: 'monospace'),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          '×${e.value}',
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.red,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
-                    Text(
-                      '×${e.value}',
-                      style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              )),
+                  )),
             ],
 
             if (total == 0)
@@ -652,16 +655,13 @@ class _MiniStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Text(value,
-          style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color)),
-      Text(label,
-          style: const TextStyle(fontSize: 10, color: Colors.grey)),
-    ],
-  );
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(value,
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+          Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        ],
+      );
 }
