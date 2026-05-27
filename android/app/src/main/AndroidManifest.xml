@@ -3,7 +3,6 @@
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <!-- FIX: specialUse type requires this permission declared separately on API 34+ -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
@@ -45,19 +44,22 @@
                 android:value="true"/>
         </service>
 
-        <!--
-            FIX: foregroundServiceType="specialUse" requires this <property> block.
-            Without it, Android 14+ (API 34) throws a SecurityException at runtime,
-            and the Play Store rejects the APK during review.
-        -->
+        <!-- Boot receiver — auto-start VPN after reboot -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+
         <property
             android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
             android:value="This app uses a VPN foreground service to intercept DNS
                            queries for system-wide ad blocking without routing all
                            traffic through a remote server."/>
 
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2"/>
+        <meta-data android:name="flutterEmbedding" android:value="2"/>
     </application>
 </manifest>

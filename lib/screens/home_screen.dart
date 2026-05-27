@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/ad_block_provider.dart';
+import 'log_screen.dart';
+import 'dns_settings_screen.dart';
+import 'custom_rules_screen.dart';
+import 'exclusions_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -17,6 +21,29 @@ class HomeScreen extends StatelessWidget {
             icon: Icon(provider.darkMode ? Icons.light_mode : Icons.dark_mode),
             onPressed: () => provider.toggleDarkMode(!provider.darkMode),
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.tune),
+            tooltip: 'Settings',
+            onSelected: (route) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => switch (route) {
+                'dns'       => const DnsSettingsScreen(),
+                'rules'     => const CustomRulesScreen(),
+                'exclusions'=> const ExclusionsScreen(),
+                _           => const DnsSettingsScreen(),
+              }));
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'dns',
+                child: ListTile(dense: true, leading: Icon(Icons.lock_outlined),
+                    title: Text('DNS & HTTPS'))),
+              PopupMenuItem(value: 'rules',
+                child: ListTile(dense: true, leading: Icon(Icons.rule),
+                    title: Text('Custom Rules'))),
+              PopupMenuItem(value: 'exclusions',
+                child: ListTile(dense: true, leading: Icon(Icons.android),
+                    title: Text('App Exclusions'))),
+            ],
+          ),
         ],
       ),
       body: SafeArea(
@@ -28,7 +55,9 @@ class HomeScreen extends StatelessWidget {
               _BigShieldButton(provider: provider),
               const SizedBox(height: 28),
               _StatsRow(provider: provider),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+              _LiveLogShortcut(provider: provider),
+              const SizedBox(height: 8),
               _BlocklistStatusCard(provider: provider),
               const SizedBox(height: 16),
               _WhatIsBlockedCard(isBlocking: provider.isBlocking),
@@ -72,10 +101,10 @@ class _BigShieldButton extends StatelessWidget {
             height: 190,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.08),
+              color: color.withOpacity(0.08),
               border: Border.all(color: color, width: 4),
               boxShadow: isOn
-                  ? [BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 50, spreadRadius: 12)]
+                  ? [BoxShadow(color: color.withOpacity(0.35), blurRadius: 50, spreadRadius: 12)]
                   : [],
             ),
             child: isLoading
@@ -91,7 +120,7 @@ class _BigShieldButton extends StatelessWidget {
                       ),
                       Text(
                         isOn ? 'Tap to stop' : 'Tap to start',
-                        style: TextStyle(fontSize: 12, color: color.withValues(alpha: 0.7)),
+                        style: TextStyle(fontSize: 12, color: color.withOpacity(0.7)),
                       ),
                     ],
                   ),
@@ -102,7 +131,7 @@ class _BigShieldButton extends StatelessWidget {
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
           decoration: BoxDecoration(
-            color: isOn ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
+            color: isOn ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -217,7 +246,7 @@ class _BlocklistStatusCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
+                    color: const Color(0xFF6C63FF).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.download_done, color: Color(0xFF6C63FF), size: 20),
@@ -281,7 +310,7 @@ class _BlocklistStatusCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.08),
+                color: Colors.green.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -401,14 +430,88 @@ class _HowItWorksCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Aegis runs a local VPN that intercepts all DNS lookups on your phone. '
+              'Aegis runs a local DNS server on your phone. '
               'When any app tries to contact an ad server, Aegis returns "not found" — '
               'so the ad never loads in any app.\n\n'
-              'The blocklist is downloaded from 4 trusted sources and refreshed every 24 hours automatically. '
+              'The blocklist is downloaded from trusted sources and refreshed every 24 hours automatically. '
               'No data ever leaves your phone — everything runs on-device.',
               style: TextStyle(fontSize: 13, color: Colors.grey, height: 1.5),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Live log shortcut ────────────────────────────────────────────────────────
+
+class _LiveLogShortcut extends StatelessWidget {
+  final AdBlockProvider provider;
+  const _LiveLogShortcut({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final recentBlocked = provider.log.reversed
+        .where((e) => e.blocked)
+        .take(3)
+        .toList();
+
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          // Switch to the Log tab via the bottom nav
+          // We do this by looking up the NavigationBar state via the scaffold
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const LogScreen()),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.dns_outlined,
+                    color: Colors.red, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Live Query Log',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
+                    if (recentBlocked.isEmpty)
+                      Text(
+                        provider.isBlocking
+                            ? 'Waiting for DNS queries...'
+                            : 'Start VPN to see activity',
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.grey),
+                      )
+                    else
+                      Text(
+                        recentBlocked.map((e) => e.domain).join(', '),
+                        style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.red),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
         ),
       ),
     );

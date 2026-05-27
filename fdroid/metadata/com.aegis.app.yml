@@ -1,0 +1,53 @@
+Categories:
+  - Internet
+  - Security
+
+License: GPL-3.0-only
+AuthorName: Rasel
+SourceCode: https://github.com/Rasel2510/aegis
+IssueTracker: https://github.com/Rasel2510/aegis/issues
+
+AutoName: Aegis
+Summary: System-wide ad blocker — no root, no remote servers
+Description: |-
+  Aegis blocks ads system-wide on Android using a local VPN and DNS server.
+  No data leaves your device. No accounts. No subscriptions.
+
+  **How it works:** Aegis runs a local DNS server. The VPN tells Android to
+  send all DNS queries there. Blocked domains (ads, trackers) return "not found"
+  before they can load in any app.
+
+  **Features:**
+  * Blocks ads in all apps including browsers
+  * 100k+ domain blocklist, auto-updated every 24 hours
+  * Real-time query log — see every DNS request live
+  * DNS-over-HTTPS support (Cloudflare, Google, AdGuard, custom)
+  * Custom block and allow rules
+  * Per-app exclusions for banking apps
+  * Statistics dashboard — 30-day history
+  * Optional HTTPS filtering (requires CA certificate install)
+  * Boot auto-start, dark mode
+
+  **No root required.**
+
+RepoType: git
+Repo: https://github.com/Rasel2510/aegis
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: v1.0.0
+    subdir: android
+    gradle:
+      - release
+    prebuild:
+      - flutter pub get
+
+MaintainerNotes: |-
+  Flutter app. Build requires Flutter SDK >= 3.24.
+  Run `flutter pub get` before Gradle build.
+
+AutoUpdateMode: None
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1

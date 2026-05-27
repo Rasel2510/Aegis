@@ -6,18 +6,15 @@ plugins {
 
 android {
     namespace "com.aegis.app"
-    compileSdk 36
-    // FIX: Use NDK r27c (27.2.12479018) — 27.0.12077973 is r27a which has known linker bugs
+    compileSdk 35
     ndkVersion "27.2.12479018"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
-        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
-        // FIX: Kotlin 2.1.0 requires jvmTarget 17 when paired with AGP 8.7+
         jvmTarget = '17'
     }
 
@@ -27,23 +24,53 @@ android {
 
     defaultConfig {
         applicationId "com.aegis.app"
-        minSdkVersion flutter.minSdkVersion
+        minSdk 21
         targetSdk 35
         versionCode 1
         versionName "1.0.0"
     }
 
-    buildTypes {
+    signingConfigs {
         release {
+            // Set these via environment variables or local.properties — never hardcode.
+            // Run: keytool -genkey -v -keystore aegis-release.jks \
+            //              -alias aegis -keyalg RSA -keysize 2048 -validity 10000
+            // Then set env vars:
+            //   AEGIS_KEYSTORE_PATH, AEGIS_KEYSTORE_PASS, AEGIS_KEY_ALIAS, AEGIS_KEY_PASS
+            def keystorePath = System.getenv("AEGIS_KEYSTORE_PATH") ?:
+                               (project.hasProperty("aegis.keystore") ?
+                                project.property("aegis.keystore") : null)
+            if (keystorePath) {
+                storeFile     file(keystorePath)
+                storePassword System.getenv("AEGIS_KEYSTORE_PASS") ?: project.findProperty("aegis.storePassword") ?: ""
+                keyAlias      System.getenv("AEGIS_KEY_ALIAS")     ?: project.findProperty("aegis.keyAlias")      ?: "aegis"
+                keyPassword   System.getenv("AEGIS_KEY_PASS")      ?: project.findProperty("aegis.keyPassword")   ?: ""
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
             signingConfig signingConfigs.debug
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                          'proguard-rules.pro'
         }
     }
 }
 
-flutter {
-    source '../..'
+dependencies {
+    // BouncyCastle — for CA/TLS certificate generation in Phase 2
+    // Android ships a stripped BC provider; we need the full one.
+    implementation "org.bouncycastle:bcpkix-jdk18on:1.78.1"
+    implementation "org.bouncycastle:bcprov-jdk18on:1.78.1"
 }
 
-dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+flutter {
+    source '../..'
 }

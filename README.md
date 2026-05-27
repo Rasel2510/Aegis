@@ -1,98 +1,82 @@
-# 🛡️ Real Ad Blocker — Flutter + Local VPN
+# Aegis — System-wide Ad Blocker for Android
 
-This app **actually blocks ads** using a local VPN that intercepts DNS traffic on your Android phone. No data leaves your device.
+A privacy-first, on-device ad blocker using a local VPN + DNS interception.
+No data leaves your device. No remote servers. No subscriptions.
 
-## How it works
+## How It Works
 
-1. App starts a local VPN (Android `VpnService`)
-2. All traffic is routed through the VPN
-3. DNS queries are intercepted and parsed
-4. If the domain matches the blocklist → NXDOMAIN (blocked)
-5. Otherwise the request passes through normally
+Aegis runs a local DNS server on `127.0.0.1:5053`. The VPN interface tells
+Android to route all DNS queries there. Blocked domains return NXDOMAIN.
+Allowed domains are forwarded to your chosen upstream (1.1.1.1 by default,
+or any DoH server you configure).
 
-This is the same technique used by AdGuard, Blokada, and DNS66.
+Optional HTTPS filtering (Phase 2): a local TLS proxy intercepts HTTPS
+connections, inspects the SNI/Host, and blocks ad endpoints. Requires
+installing a CA certificate from the app.
 
----
+## Architecture
 
-## Build Instructions
+```
+Any app → DNS query → 127.0.0.1:5053 (LocalDnsServer)
+                            ↓                    ↓
+                     BlocklistEngine     forwardToUpstream()
+                            ↓               (protect()d socket)
+                       NXDOMAIN              1.1.1.1 / DoH
+```
 
-### Requirements
-- Flutter 3.10+ installed → https://flutter.dev/docs/get-started/install
-- Android Studio with Android SDK (API 21+)
-- A physical Android phone or emulator
+## Features
 
-### Steps
+- ✅ System-wide DNS-based ad blocking (all apps, no root needed)
+- ✅ 100k+ domain blocklist (StevenBlack + hagezi, auto-updated every 24h)
+- ✅ YouTube ad domain blocking
+- ✅ Real-time query log with filter/search
+- ✅ Per-session and 30-day statistics
+- ✅ DNS-over-HTTPS (Cloudflare, Google, AdGuard, custom)
+- ✅ Custom block/allow rules
+- ✅ Per-app exclusions (for banking apps with cert pinning)
+- ✅ Boot auto-start with watchdog
+- ✅ HTTPS filtering with local CA (optional, requires cert install)
+- ✅ Dark mode
 
+## Building
+
+### Debug (sideload)
 ```bash
-# 1. Unzip and enter directory
-unzip adblocker_real.zip
-cd adblocker_real
+flutter build apk --debug
+```
 
-# 2. Edit android/local.properties — set your paths:
-#    sdk.dir=/Users/YOU/Library/Android/sdk
-#    flutter.sdk=/Users/YOU/flutter
+### Release (signed)
+```bash
+# 1. Generate keystore (once)
+keytool -genkey -v -keystore aegis-release.jks \
+        -alias aegis -keyalg RSA -keysize 2048 -validity 10000
 
-# 3. Install dependencies
-flutter pub get
+# 2. Set environment variables
+export AEGIS_KEYSTORE_PATH=/path/to/aegis-release.jks
+export AEGIS_KEYSTORE_PASS=yourpassword
+export AEGIS_KEY_ALIAS=aegis
+export AEGIS_KEY_PASS=yourpassword
 
-# 4. Run on connected phone (debug)
-flutter run
-
-# 5. Build release APK
+# 3. Build
 flutter build apk --release
-# APK will be at: build/app/outputs/flutter-apk/app-release.apk
+# Output: build/app/outputs/flutter-apk/app-release.apk
 ```
 
-### Install APK on phone
-```bash
-adb install build/app/outputs/flutter-apk/app-release.apk
-```
-Or copy the APK to your phone and open it (enable "Install unknown apps" in Settings first).
+## Distribution
 
----
-
-## First Launch
-
-1. Open the app
-2. Tap the big shield button
-3. Android will show a VPN permission dialog — tap **OK**
-4. The shield turns ON — ads are now blocked system-wide
-
----
-
-## What's blocked
-
-- YouTube ad servers (pre-roll, banner, mid-roll)
-- Google Ads / DoubleClick
-- Facebook / Meta ads
-- TikTok, Snapchat, Twitter ad networks
-- 80+ major ad networks
-- Tracking & analytics domains
-- Known malware domains
-
----
+Google Play bans VPN-based ad blockers. Distribute via:
+- **F-Droid** — see `fdroid/metadata/com.aegis.app.yml`
+- **GitHub Releases** — attach the signed APK directly
 
 ## Limitations
 
-- **YouTube Premium ads**: YouTube increasingly serves ads from the same domain as videos (`youtube.com`), so those specific server-side injected ads can't be blocked by DNS. For full YouTube blocking, use **YouTube ReVanced**.
-- **iOS**: Apple does not allow the `VpnService` API that makes this work on Android. Use AdGuard from the App Store on iOS instead.
-- **Always-on VPN**: You can enable this in Android Settings → Network → VPN → Ad Blocker → Always-on VPN for auto-start on reboot.
+- DNS blocking only catches domains resolved via DNS. Apps using hardcoded
+  IPs or DNS-over-HTTPS bypass it (enable HTTPS filtering to catch more).
+- HTTPS filtering requires the user to install a CA certificate. Certificate-
+  pinned apps (banking, Signal, WhatsApp) must be added to the exclusion list.
+- YouTube constantly changes its ad server infrastructure. The blocklist needs
+  regular updates — Aegis fetches fresh lists automatically every 24 hours.
 
----
+## License
 
-## Project Structure
-
-```
-lib/
-├── main.dart
-├── providers/ad_block_provider.dart   # State + VPN polling
-├── services/vpn_service.dart          # Flutter ↔ Kotlin bridge
-└── screens/home_screen.dart           # UI
-
-android/app/src/main/kotlin/.../
-├── MainActivity.kt                    # VPN permission flow
-└── AdBlockVpnService.kt               # REAL VPN + DNS filter
-
-assets/
-└── blocklist.txt                      # Ad domain blocklist
-```
+GPL-3.0 — see LICENSE
