@@ -6,21 +6,6 @@ import android.content.Intent
 import android.net.VpnService
 import android.util.Log
 
-/**
- * DAY 14 — BootReceiver
- *
- * Starts the VPN service automatically when the device boots,
- * IF the user had it running before the reboot.
- *
- * We only auto-start if:
- *   1. The user previously granted VPN permission (VpnService.prepare returns null)
- *   2. The "auto_start" preference is true (set when user first enables VPN)
- *
- * We cannot call VpnService.prepare() from a BroadcastReceiver (no Activity),
- * so we rely on the permission persisting from the previous grant.
- * If permission was revoked, the service will fail silently and the
- * user will need to open the app to re-grant.
- */
 class BootReceiver : BroadcastReceiver() {
 
     companion object {
@@ -39,9 +24,9 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        val action = intent.action
-        if (action != Intent.ACTION_BOOT_COMPLETED &&
-            action != "android.intent.action.QUICKBOOT_POWERON") return
+        val receivedAction = intent.action
+        if (receivedAction != Intent.ACTION_BOOT_COMPLETED &&
+            receivedAction != "android.intent.action.QUICKBOOT_POWERON") return
 
         Log.i(TAG, "Boot received")
 
@@ -50,7 +35,6 @@ class BootReceiver : BroadcastReceiver() {
             return
         }
 
-        // Check VPN permission is still granted (prepare returns null = already granted)
         val vpnIntent = VpnService.prepare(context)
         if (vpnIntent != null) {
             Log.w(TAG, "VPN permission not pre-granted — cannot auto-start")

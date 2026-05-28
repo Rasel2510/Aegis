@@ -30,6 +30,10 @@ class AdBlockVpnService : VpnService() {
 
         val isRunning       = AtomicBoolean(false)
         val adsBlockedTotal = AtomicInteger(0)
+
+        // Exposed so MainActivity can call protect() via the live service instance
+        var instance: AdBlockVpnService? = null
+            private set
     }
 
     private var vpnInterface: ParcelFileDescriptor? = null
@@ -43,6 +47,7 @@ class AdBlockVpnService : VpnService() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         prefs  = getSharedPreferences(PREFS, MODE_PRIVATE)
         engine = BlocklistEngine(this)
         engine.load { count ->
@@ -61,8 +66,13 @@ class AdBlockVpnService : VpnService() {
         }
     }
 
-    override fun onDestroy() { stopVpn(); super.onDestroy() }
-    override fun onRevoke()  { stopVpn() }
+    override fun onDestroy() {
+        instance = null
+        stopVpn()
+        super.onDestroy()
+    }
+
+    override fun onRevoke() { stopVpn() }
 
     // ── Start ──────────────────────────────────────────────────────────────────
 
@@ -75,7 +85,6 @@ class AdBlockVpnService : VpnService() {
         val httpsEnabled = prefs.getBoolean(KEY_HTTPS_ON, false) &&
                            CertificateManager.isCaInstalled()
 
-        // 1. HTTPS proxy (must start before VPN so port is ready)
         if (httpsEnabled) {
             val proxy = LocalHttpsProxy(engine) { sock: Socket -> protect(sock) }
             proxy.start()
@@ -83,39 +92,34 @@ class AdBlockVpnService : VpnService() {
             Log.i(TAG, "HTTPS proxy enabled")
         }
 
-        // 2. DNS server
         val dohUrl = prefs.getString(KEY_DOH_URL, null)
         val server = LocalDnsServer(
-            engine       = engine,
+            engine        = engine,
             protectSocket = { sock: DatagramSocket -> protect(sock) },
-            onBlocked    = { _ ->
+            onBlocked     = { _ ->
                 adsBlockedTotal.incrementAndGet()
                 updateNotification()
             },
-            dohUrl       = dohUrl,
+            dohUrl        = dohUrl,
         )
         server.start()
         dnsServer = server
 
-        // 3. VPN interface
         val builder = Builder()
             .setSession("Aegis")
             .addAddress("10.0.0.2", 32)
             .addDnsServer("127.0.0.1")
             .setMtu(1500)
-            .setBlocking(httpsEnabled)  // blocking only needed if TcpForwarder reads tun
+            .setBlocking(httpsEnabled)
 
-        // Exclude our own app to prevent DNS loops
         try { builder.addDisallowedApplication(packageName) } catch (_: Exception) {}
 
-        // Apply per-app exclusions
         if (httpsEnabled) {
             ExclusionList.getAll().forEach { pkg ->
                 try { builder.addDisallowedApplication(pkg) } catch (_: Exception) {}
             }
-            // Route TCP:443 through tun so TcpForwarder can redirect to proxy
-            builder.addRoute("0.0.0.0", 1)   // 0.0.0.0/1 + 128.0.0.0/1 = all traffic
-            builder.addRoute("128.0.0.0", 1) // split into two /1 to avoid default route issues
+            builder.addRoute("0.0.0.0", 1)
+            builder.addRoute("128.0.0.0", 1)
         }
 
         val pfd = builder.establish()
@@ -127,7 +131,6 @@ class AdBlockVpnService : VpnService() {
         }
         vpnInterface = pfd
 
-        // 4. TCP forwarder (only when HTTPS proxy is active)
         if (httpsEnabled) {
             val fwd = TcpForwarder(
                 tunFd         = pfd.fileDescriptor,
@@ -138,7 +141,6 @@ class AdBlockVpnService : VpnService() {
             tcpForwarder = fwd
         }
 
-        // 5. Watchdog
         VpnWatchdog.start(this)
 
         isRunning.set(true)

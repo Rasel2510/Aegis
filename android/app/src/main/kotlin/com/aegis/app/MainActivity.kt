@@ -15,10 +15,10 @@ import java.util.concurrent.Executors
 class MainActivity : FlutterActivity() {
 
     companion object {
-        private const val METHOD_CHANNEL = "com.aegis.app/vpn"
-        private const val EVENT_CHANNEL  = "com.aegis.app/log"
+        private const val METHOD_CHANNEL   = "com.aegis.app/vpn"
+        private const val EVENT_CHANNEL    = "com.aegis.app/log"
         private const val VPN_REQUEST_CODE = 100
-        private const val PREFS = "aegis_prefs"
+        private const val PREFS            = "aegis_prefs"
     }
 
     private lateinit var methodChannel: MethodChannel
@@ -38,43 +38,54 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
 
                 // ── VPN control ───────────────────────────────────────────
-                "startVpn"       -> startVpn(result)
-                "stopVpn"        -> stopVpn(result)
-                "isVpnRunning"   -> result.success(AdBlockVpnService.isRunning.get())
-                "getAdsBlocked"  -> result.success(AdBlockVpnService.adsBlockedTotal.get())
+                "startVpn"      -> startVpn(result)
+                "stopVpn"       -> stopVpn(result)
+                "isVpnRunning"  -> result.success(AdBlockVpnService.isRunning.get())
+                "getAdsBlocked" -> result.success(AdBlockVpnService.adsBlockedTotal.get())
 
                 // ── Blocklist ─────────────────────────────────────────────
                 "getDomainCount" -> result.success(getOrCreateEngine().domainCount())
                 "getLastUpdate"  -> {
-                    val ms = getSharedPreferences(PREFS, MODE_PRIVATE).getLong("last_update_ms", 0L)
+                    val ms = getSharedPreferences(PREFS, MODE_PRIVATE)
+                        .getLong("last_update_ms", 0L)
                     result.success(ms)
                 }
 
                 // ── Log ───────────────────────────────────────────────────
-                "getLogSnapshot" -> result.success(ConnectionLog.snapshot().map { it.toWire() })
+                "getLogSnapshot" -> result.success(
+                    ConnectionLog.snapshot().map { it.toWire() }
+                )
 
                 // ── Debug ─────────────────────────────────────────────────
-                "checkDomain"    -> {
+                "checkDomain" -> {
                     val domain = call.argument<String>("domain")
-                    if (domain == null) { result.error("BAD_ARG", "domain required", null); return@setMethodCallHandler }
+                    if (domain == null) {
+                        result.error("BAD_ARG", "domain required", null)
+                        return@setMethodCallHandler
+                    }
                     val blocked = getOrCreateEngine().shouldBlock(domain.trim().lowercase())
                     result.success(mapOf("domain" to domain, "blocked" to blocked))
                 }
+
                 "getHealthStatus" -> {
                     val engine = getOrCreateEngine()
                     bgExecutor.submit {
-                        val h = HealthChecker.run(engine) { sock: DatagramSocket -> protect(sock) }
+                        val vpnService = AdBlockVpnService.instance
+                        val h = HealthChecker.run(engine) { sock: DatagramSocket ->
+                            vpnService?.protect(sock) ?: false
+                        }
                         mainHandler.post { result.success(h.toMap()) }
                     }
                 }
 
-                // ── Stats (Day 15) ────────────────────────────────────────
+                // ── Stats ─────────────────────────────────────────────────
                 "getStats" -> {
                     val days = StatsManager.getLast(7)
                     result.success(days.map { d ->
                         mapOf("date" to d.date, "blocked" to d.blocked, "allowed" to d.allowed)
                     })
                 }
+
                 "getTopDomains" -> {
                     val top = StatsManager.getTopDomains(10)
                     result.success(top.map { (domain, count) ->
@@ -82,7 +93,7 @@ class MainActivity : FlutterActivity() {
                     })
                 }
 
-                // ── Settings (Day 16, 17) ─────────────────────────────────
+                // ── Settings ──────────────────────────────────────────────
                 "setDohUrl" -> {
                     val url = call.argument<String>("url")
                     getSharedPreferences(PREFS, MODE_PRIVATE).edit()
@@ -99,17 +110,18 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 "getHttpsFiltering" -> result.success(
-                    getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("https_filtering", false)
+                    getSharedPreferences(PREFS, MODE_PRIVATE)
+                        .getBoolean("https_filtering", false)
                 )
-                "isCaInstalled"  -> result.success(CertificateManager.isCaInstalled())
-                "exportCaCert"   -> {
+                "isCaInstalled" -> result.success(CertificateManager.isCaInstalled())
+                "exportCaCert"  -> {
                     val file = CertificateManager.exportCertForInstall(this)
                     result.success(file?.absolutePath)
                 }
 
-                // ── Exclusions (Day 9) ────────────────────────────────────
-                "getExclusions"  -> result.success(ExclusionList.getAll().toList())
-                "addExclusion"   -> {
+                // ── Exclusions ────────────────────────────────────────────
+                "getExclusions" -> result.success(ExclusionList.getAll().toList())
+                "addExclusion"  -> {
                     val pkg = call.argument<String>("package") ?: ""
                     ExclusionList.add(this, pkg)
                     result.success(true)
@@ -120,7 +132,7 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
 
-                // ── Custom rules (Day 16) ─────────────────────────────────
+                // ── Custom rules ──────────────────────────────────────────
                 "addCustomBlock" -> {
                     val domain = call.argument<String>("domain") ?: ""
                     getOrCreateEngine().addCustomBlock(domain)
@@ -149,29 +161,47 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun getOrCreateEngine(): BlocklistEngine {
-        return blocklistEngine ?: BlocklistEngine(this).also { it.load(); blocklistEngine = it }
+        return blocklistEngine
+            ?: BlocklistEngine(this).also { it.load(); blocklistEngine = it }
     }
 
     private fun startVpn(result: MethodChannel.Result) {
         val vpnIntent = VpnService.prepare(this)
-        if (vpnIntent != null) { pendingResult = result; startActivityForResult(vpnIntent, VPN_REQUEST_CODE) }
-        else { launchVpnService(); result.success(true) }
+        if (vpnIntent != null) {
+            pendingResult = result
+            startActivityForResult(vpnIntent, VPN_REQUEST_CODE)
+        } else {
+            launchVpnService()
+            result.success(true)
+        }
     }
 
     private fun stopVpn(result: MethodChannel.Result) {
-        startService(Intent(this, AdBlockVpnService::class.java).apply { action = AdBlockVpnService.ACTION_STOP })
+        startService(
+            Intent(this, AdBlockVpnService::class.java).apply {
+                action = AdBlockVpnService.ACTION_STOP
+            }
+        )
         result.success(true)
     }
 
     private fun launchVpnService() {
-        startService(Intent(this, AdBlockVpnService::class.java).apply { action = AdBlockVpnService.ACTION_START })
+        startService(
+            Intent(this, AdBlockVpnService::class.java).apply {
+                action = AdBlockVpnService.ACTION_START
+            }
+        )
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == VPN_REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_OK) { launchVpnService(); pendingResult?.success(true) }
-            else pendingResult?.success(false)
+            if (resultCode == Activity.RESULT_OK) {
+                launchVpnService()
+                pendingResult?.success(true)
+            } else {
+                pendingResult?.success(false)
+            }
             pendingResult = null
         }
     }
