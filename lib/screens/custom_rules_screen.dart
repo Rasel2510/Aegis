@@ -188,4 +188,4 @@ class _RuleTab extends StatelessWidget {
       ]),
     );
   }
-}
+}.....
