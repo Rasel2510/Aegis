@@ -58,7 +58,14 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
-            signingConfig signingConfigs.release
+            def keystorePath = System.getenv("AEGIS_KEYSTORE_PATH") ?:
+                               (project.hasProperty("aegis.keystore") ?
+                                project.property("aegis.keystore") : null)
+            if (keystorePath) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
                           'proguard-rules.pro'
         }
