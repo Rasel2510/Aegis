@@ -113,7 +113,7 @@ class _BarChart extends StatelessWidget {
                   Container(
                     height: (frac * 100).clamp(4.0, 100.0),
                     decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.7),
+                        color: Colors.red.withValues(alpha: 00.7),
                         borderRadius: BorderRadius.circular(3)),
                   ),
                   const SizedBox(height: 4),
@@ -130,7 +130,7 @@ class _BarChart extends StatelessWidget {
               width: 10,
               height: 10,
               decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.7),
+                  color: Colors.red.withValues(alpha: 00.7),
                   borderRadius: BorderRadius.circular(2))),
           const SizedBox(width: 6),
           const Text('Blocked per day',
@@ -167,7 +167,7 @@ class _TopDomainTile extends StatelessWidget {
             child: LinearProgressIndicator(
               value: frac,
               minHeight: 3,
-              backgroundColor: Colors.red.withValues(alpha: 0.1),
+              backgroundColor: Colors.red.withValues(alpha: 00.1),
               valueColor: const AlwaysStoppedAnimation(Colors.red),
             ),
           ),

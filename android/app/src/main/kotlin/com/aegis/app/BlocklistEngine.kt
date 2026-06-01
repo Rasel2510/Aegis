@@ -138,9 +138,21 @@ class BlocklistEngine(private val context: Context) {
         if (d.isNotEmpty()) { customBlock.add(d); Log.i(TAG, "Custom block: $d") }
     }
 
+    fun removeCustomBlock(domain: String) {
+        val d = domain.lowercase().trim()
+        customBlock.remove(d)
+        Log.i(TAG, "Custom block removed: $d")
+    }
+
     fun addCustomAllow(domain: String) {
         val d = domain.lowercase().trim()
         if (d.isNotEmpty()) { customAllow.add(d); Log.i(TAG, "Custom allow: $d") }
+    }
+
+    fun removeCustomAllow(domain: String) {
+        val d = domain.lowercase().trim()
+        customAllow.remove(d)
+        Log.i(TAG, "Custom allow removed: $d")
     }
 
     fun getCustomRules(): Map<String, List<String>> = mapOf(

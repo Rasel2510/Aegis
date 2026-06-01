@@ -223,7 +223,7 @@ class _HealthCard extends StatelessWidget {
         side: BorderSide(
           color: allGood
               ? Colors.green.withValues(alpha: 0.4)
-              : Colors.orange.withValues(alpha: 0.4),
+              : Colors.orange.withValues(alpha: 00.4),
           width: 1.5,
         ),
       ),
@@ -237,8 +237,8 @@ class _HealthCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
                 color: allGood
-                    ? Colors.green.withValues(alpha: 0.1)
-                    : Colors.orange.withValues(alpha: 0.1),
+                    ? Colors.green.withValues(alpha: 00.1)
+                    : Colors.orange.withValues(alpha: 00.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -282,7 +282,7 @@ class _HealthCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.08),
+                  color: Colors.red.withValues(alpha: 00.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -437,12 +437,12 @@ class _DomainTesterCard extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: shouldBlock
-                          ? Colors.red.withValues(alpha: 0.08)
-                          : Colors.green.withValues(alpha: 0.08),
+                          ? Colors.red.withValues(alpha: 00.08)
+                          : Colors.green.withValues(alpha: 00.08),
                       border: Border.all(
                         color: shouldBlock
-                            ? Colors.red.withValues(alpha: 0.3)
-                            : Colors.green.withValues(alpha: 0.3),
+                            ? Colors.red.withValues(alpha: 00.3)
+                            : Colors.green.withValues(alpha: 00.3),
                       ),
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -500,8 +500,8 @@ class _ResultBanner extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          border: Border.all(color: color.withValues(alpha: 0.4)),
+          color: color.withValues(alpha: 00.08),
+          border: Border.all(color: color.withValues(alpha: 00.4)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -591,7 +591,7 @@ class _StatsCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: blockPct / 100,
                   minHeight: 6,
-                  backgroundColor: Colors.green.withValues(alpha: 0.2),
+                  backgroundColor: Colors.green.withValues(alpha: 00.2),
                   valueColor: const AlwaysStoppedAnimation(Colors.red),
                 ),
               ),

@@ -165,5 +165,7 @@ class VpnService {
     } catch (_) { return {'block': [], 'allow': []}; }
   }
   static Future<void> addCustomBlock(String domain) async { try { await _ch.invokeMethod('addCustomBlock', {'domain': domain}); } catch (_) {} }
+  static Future<void> removeCustomBlock(String domain) async { try { await _ch.invokeMethod('removeCustomBlock', {'domain': domain}); } catch (_) {} }
   static Future<void> addCustomAllow(String domain) async { try { await _ch.invokeMethod('addCustomAllow', {'domain': domain}); } catch (_) {} }
+  static Future<void> removeCustomAllow(String domain) async { try { await _ch.invokeMethod('removeCustomAllow', {'domain': domain}); } catch (_) {} }
 }

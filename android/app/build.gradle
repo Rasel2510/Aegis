@@ -10,9 +10,9 @@ android {
     ndkVersion "27.2.12479018"
 
     compileOptions {
-        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
@@ -26,13 +26,18 @@ android {
     defaultConfig {
         applicationId "com.aegis.app"
         minSdkVersion flutter.minSdkVersion
-        targetSdk 36
+        targetSdk 35
         versionCode 1
         versionName "1.0.0"
     }
 
     signingConfigs {
         release {
+            // Set these via environment variables or local.properties — never hardcode.
+            // Run: keytool -genkey -v -keystore aegis-release.jks \
+            //              -alias aegis -keyalg RSA -keysize 2048 -validity 10000
+            // Then set env vars:
+            //   AEGIS_KEYSTORE_PATH, AEGIS_KEYSTORE_PASS, AEGIS_KEY_ALIAS, AEGIS_KEY_PASS
             def keystorePath = System.getenv("AEGIS_KEYSTORE_PATH") ?:
                                (project.hasProperty("aegis.keystore") ?
                                 project.property("aegis.keystore") : null)
@@ -58,11 +63,27 @@ android {
                           'proguard-rules.pro'
         }
     }
+
+    packaging {
+        resources {
+            // BouncyCastle JARs all ship this file — pick first, discard duplicates.
+            excludes += [
+                'META-INF/versions/9/OSGI-INF/MANIFEST.MF',
+                'META-INF/MANIFEST.MF',
+                'META-INF/*.SF',
+                'META-INF/*.DSA',
+                'META-INF/*.RSA',
+            ]
+        }
+    }
 }
 
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    // Core library desugaring — required by flutter_local_notifications
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4"
 
+    // BouncyCastle — for CA/TLS certificate generation in Phase 2
+    // Android ships a stripped BC provider; we need the full one.
     implementation "org.bouncycastle:bcpkix-jdk18on:1.78.1"
     implementation "org.bouncycastle:bcprov-jdk18on:1.78.1"
 }
