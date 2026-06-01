@@ -83,16 +83,14 @@ class AdBlockVpnService : VpnService() {
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, buildNotification())
 
-        val httpsEnabled = prefs.getBoolean(KEY_HTTPS_ON, false) &&
-                           CertificateManager.isCaInstalled()
+        // HTTPS MITM proxy requires routing ALL traffic through the tun and a full
+        // userspace TCP stack (SYN/ACK handshake, seq tracking, etc.) which this app
+        // does not implement. Enabling it breaks all browser traffic. Disabled for now.
+        // httpsEnabled is kept as false so the rest of the flow works unchanged.
+        val httpsEnabled = false
 
-        // 1. HTTPS proxy (must start before VPN so port is ready)
-        if (httpsEnabled) {
-            val proxy = LocalHttpsProxy(engine) { sock: Socket -> protect(sock) }
-            proxy.start()
-            httpsProxy = proxy
-            Log.i(TAG, "HTTPS proxy enabled")
-        }
+        // HTTPS proxy disabled — requires full userspace TCP stack
+        // if (httpsEnabled) { ... }
 
         // 2. DNS server
         val dohUrl = prefs.getString(KEY_DOH_URL, null)
@@ -183,11 +181,10 @@ class AdBlockVpnService : VpnService() {
             try { builder.addDisallowedApplication(pkg) } catch (_: Exception) {}
         }
 
-        if (httpsEnabled) {
-            // Route all traffic through tun so TcpForwarder can redirect TCP:443
-            builder.addRoute("0.0.0.0", 1)
-            builder.addRoute("128.0.0.0", 1)
-        }
+        // Only DNS traffic (10.0.0.1/32) goes through the tun — all TCP goes directly.
+        // This is the correct architecture for a DNS-only ad blocker.
+        // Full routing (0.0.0.0/0) would require a userspace TCP stack to relay
+        // browser connections, which is not implemented and would break all browsing.
 
         val pfd = builder.establish()
         if (pfd == null) {
