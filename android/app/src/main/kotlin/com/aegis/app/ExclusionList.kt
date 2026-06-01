@@ -39,9 +39,13 @@ object ExclusionList {
         // User should add their specific banking app package name
         // e.g. "com.chase.sig.android", "com.bofa.digitalbanking"
 
-        // Google Play — pinned, breaks app updates if filtered
-        "com.android.vending",
-        "com.google.android.gms",
+        // Google services — pinned certs, certificate pinning, break under HTTPS MITM
+        "com.android.vending",          // Google Play Store
+        "com.google.android.gms",       // Google Play Services
+        "com.google.android.youtube",   // YouTube — certificate pinned, must bypass VPN
+        "com.google.android.apps.youtube.music", // YouTube Music
+        "com.google.android.youtube.tv",         // YouTube TV
+        "com.google.android.gsf",       // Google Services Framework
 
         // System
         "android",
@@ -57,8 +61,17 @@ object ExclusionList {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val saved = prefs.getStringSet(KEY, null)
         _packages.clear()
+        // ALWAYS start with DEFAULTS — this ensures new default exclusions
+        // (like YouTube) are applied even on existing installs that have
+        // a stale SharedPreferences snapshot from a previous version.
         _packages.addAll(DEFAULTS)
-        if (saved != null) _packages.addAll(saved)
+        // Merge in any user-added packages (user custom entries survive updates)
+        if (saved != null) {
+            val userAdded = saved.subtract(DEFAULTS) // only truly user-added ones
+            _packages.addAll(userAdded)
+        }
+        // Re-persist to ensure SharedPreferences reflects latest DEFAULTS
+        persist(context)
         loaded = true
         Log.i(TAG, "Exclusions loaded: ${_packages.size} packages")
     }

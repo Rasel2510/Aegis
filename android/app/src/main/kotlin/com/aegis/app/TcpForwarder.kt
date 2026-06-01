@@ -238,30 +238,38 @@ class TcpForwarder(
     }
 
     private fun forwardDirect(dstIp: InetAddress, dstPort: Int) {
-        try {
-            val sock = Socket()
-            if (!protectSocket(sock)) { sock.close(); return }
-            sock.soTimeout = TIMEOUT
-            sock.connect(InetSocketAddress(dstIp, dstPort), TIMEOUT)
-            sock.close()
-        } catch (e: Exception) {
-            Log.d(TAG, "forwardDirect $dstIp:$dstPort — ${e.message}")
-        }
+        // NOTE: We cannot truly "intercept" TCP inside a tun interface without
+        // a full userspace TCP stack. The tun only gives us raw IP packets.
+        // forwardDirect() is only called for non-HTTPS TCP (e.g. HTTP port 80).
+        //
+        // For proper TCP relaying, we would need to:
+        //   1. Complete the TCP 3-way handshake with the client app
+        //   2. Open a protected socket to the real destination
+        //   3. Relay data bidirectionally
+        //
+        // This requires a full userspace TCP stack (like gVisor or lwIP).
+        // Without one, we simply log and drop — the OS will retry via direct path
+        // if no VPN route covers it.
+        Log.d(TAG, "forwardDirect $dstIp:$dstPort (TCP relay not available without userspace stack)")
     }
 
     private fun forwardTo(
         origDst: InetAddress, origPort: Int,
         newDst: InetAddress,  newPort: Int,
     ) {
+        Log.d(TAG, "TCP:$origPort → proxy :$newPort (TCP relay not available without userspace stack)")
+    }
+
+    // ── Bidirectional relay ───────────────────────────────────────────────────
+
+    private fun relay(from: java.io.InputStream, to: java.io.OutputStream) {
+        val buf = ByteArray(8192)
         try {
-            val sock = Socket()
-            protectSocket(sock)
-            sock.soTimeout = TIMEOUT
-            sock.connect(InetSocketAddress(newDst, newPort), TIMEOUT)
-            Log.d(TAG, "TCP:$origPort → proxy :$newPort")
-            sock.close()
-        } catch (e: Exception) {
-            Log.d(TAG, "forwardTo $newDst:$newPort — ${e.message}")
-        }
+            var n: Int
+            while (from.read(buf).also { n = it } != -1) {
+                to.write(buf, 0, n)
+                to.flush()
+            }
+        } catch (_: Exception) {}
     }
 }
