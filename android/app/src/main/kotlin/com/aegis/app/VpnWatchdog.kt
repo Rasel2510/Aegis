@@ -4,25 +4,22 @@ import android.content.Context
 import android.content.Intent
 import android.net.VpnService
 import android.util.Log
+import java.net.DatagramSocket
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 /**
- * DAY 18 — VpnWatchdog
+ * VpnWatchdog — monitors VPN health and restarts if it dies.
  *
- * Monitors VPN service health and restarts it if it dies.
- * Checks every 30 seconds. If the VPN is supposed to be running
- * (auto_start = true) but AdBlockVpnService.isRunning is false,
- * re-issues the start intent.
- *
- * Also monitors DNS server health via a lightweight probe:
- * sends a DNS query to 127.0.0.1:5053 and checks for a response.
- * If no response in 2 seconds, the DNS server thread likely crashed.
+ * FIX #4: probeDns() must call protect() on its socket before sending.
+ * Without protect(), while the VPN is active the probe packet re-enters
+ * the tun tunnel and never reaches LocalDnsServer, causing a spurious
+ * timeout → false-positive restart loop → VPN crash cycle.
  */
 object VpnWatchdog {
 
-    private const val TAG           = "VpnWatchdog"
+    private const val TAG            = "VpnWatchdog"
     private const val CHECK_INTERVAL = 30L   // seconds
     private const val DNS_PROBE_TIMEOUT = 2_000
 
@@ -53,7 +50,7 @@ object VpnWatchdog {
         val shouldRun = BootReceiver.isAutoStart(context)
         val isRunning = AdBlockVpnService.isRunning.get()
 
-        if (!shouldRun) return   // user hasn't enabled auto-start
+        if (!shouldRun) return
 
         if (!isRunning) {
             Log.w(TAG, "VPN not running — restarting")
@@ -61,7 +58,7 @@ object VpnWatchdog {
             return
         }
 
-        // Probe DNS server
+        // FIX #4: protect the probe socket so it exits the tun rather than looping back
         if (!probeDns()) {
             Log.w(TAG, "DNS server not responding — restarting VPN")
             restart(context)
@@ -81,12 +78,25 @@ object VpnWatchdog {
     }
 
     /**
-     * Send a DNS query for "a.b" to our local DNS server and check for a response.
-     * Returns true if the server responds within DNS_PROBE_TIMEOUT ms.
+     * Send a DNS query to our local DNS server (127.0.0.1:5053) and wait for a reply.
+     * The socket is protected so it bypasses the VPN tunnel.
      */
     private fun probeDns(): Boolean {
         return try {
-            val sock = java.net.DatagramSocket()
+            val sock = DatagramSocket()
+
+            // FIX #4: protect the socket so it goes to loopback directly,
+            // not back into our own VPN tun
+            val vpnService = AdBlockVpnService.instance
+            if (vpnService != null) {
+                if (!vpnService.protectSocket(sock)) {
+                    sock.close()
+                    // If we can't protect, skip the probe rather than false-positive restart
+                    Log.w(TAG, "probeDns: could not protect socket — skipping probe")
+                    return true
+                }
+            }
+
             sock.soTimeout = DNS_PROBE_TIMEOUT
             val addr  = java.net.InetAddress.getLoopbackAddress()
             val query = buildMinimalQuery("a.b")

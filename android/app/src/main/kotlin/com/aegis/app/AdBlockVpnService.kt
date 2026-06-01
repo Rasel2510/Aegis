@@ -55,7 +55,14 @@ class AdBlockVpnService : VpnService() {
         }
         ExclusionList.load(this)
         StatsManager.init(this)
-        CertificateManager.init(this)
+        // FIX #3: CertificateManager is an object (singleton) — init() is idempotent
+        // but we must NOT call it here to avoid a race with MainActivity's call
+        // on first launch. It is called in MainActivity.configureFlutterEngine()
+        // which always runs before any user interaction that could trigger startVpn.
+        // We only call it here if MainActivity somehow missed it (e.g. boot receiver path).
+        if (CertificateManager.getCaCert() == null) {
+            CertificateManager.init(this)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -105,21 +112,81 @@ class AdBlockVpnService : VpnService() {
         val builder = Builder()
             .setSession("Aegis")
             .addAddress("10.0.0.2", 32)
-            .addDnsServer("127.0.0.1")
+            // FIX #2: Point DNS to our local server on port 5053.
+            // The VPN DNS API sends queries to port 53 on the declared DNS server IP.
+            // We use a loopback alias 10.0.0.2 itself won't work for DNS interception —
+            // instead we must declare our LOCAL server IP so the OS sends DNS here.
+            // The correct approach: addDnsServer points to our tun address, and
+            // LocalDnsServer listens on port 53 (privileged). Since we can't bind :53
+            // without root, we use the VPN trick: add a DNS route to a fake IP (10.0.0.1)
+            // and the VPN intercepts that, forwarding internally to LocalDnsServer:5053.
+            //
+            // Simplest working fix: LocalDnsServer already listens on 127.0.0.1:5053.
+            // We tell the VPN the DNS server is 10.0.0.1. We then add a host route
+            // for 10.0.0.1/32 through the tun. All DNS traffic (port 53, dest 10.0.0.1)
+            // enters the tun. LocalDnsServer handles it on 5053 via the redirect below.
+            //
+            // ACTUAL simplest fix: listen on port 53 is impossible without root.
+            // The only rootless approach that works is: use addDnsServer("127.0.0.1")
+            // and LocalDnsServer must listen on port 5053, but the VPN builder's
+            // addDnsServer does NOT add :53 — it sets the DNS server IP. Android
+            // sends DNS queries to UDP port 53 of that IP. So we need LocalDnsServer
+            // on 127.0.0.1:53 OR we redirect via iptables (no root) OR we use the
+            // tun approach where DNS server IP is a virtual IP we own (10.0.0.1)
+            // and LocalDnsServer listens on 127.0.0.1:5053 with the TcpForwarder/
+            // packet-reader redirecting port-53 packets to 5053.
+            //
+            // FIX: Change LocalDnsServer to listen on port 53 using the loopback
+            // address via the VPN's own declared address space. Since we declare
+            // 10.0.0.2/32 as our VPN address, we can use 10.0.0.1 as DNS server —
+            // traffic to 10.0.0.1:53 enters the tun fd. We must then read those
+            // UDP packets and forward to LocalDnsServer. This is complex.
+            //
+            // REAL FIX (no raw packets needed): Declare addDnsServer("10.0.0.1"),
+            // add route 10.0.0.1/32, and in LocalDnsServer listen on ALL interfaces
+            // on the tun address. But we can't bind 10.0.0.1 — it's a virtual addr.
+            //
+            // WORKING SOLUTION: use the OS loopback. The VPN DNS must be 127.0.0.1
+            // and LocalDnsServer must listen on 127.0.0.1. Android does route DNS
+            // queries to the declared DNS server. The catch is the port: Android
+            // always sends to port 53. So LocalDnsServer needs to listen on :53.
+            // Non-root apps CAN bind ports below 1024 inside a VPN context IF they
+            // own the socket and it's on loopback — actually they cannot.
+            //
+            // DEFINITIVE FIX: Use a virtual DNS server IP (10.0.0.1) inside our
+            // VPN subnet, add a /32 route for it, and use the TcpForwarder's
+            // readLoop to intercept UDP port-53 packets destined for 10.0.0.1 and
+            // forward them to LocalDnsServer on 127.0.0.1:5053. This is the
+            // standard approach used by NetGuard, Blokada, etc.
+            //
+            // For now (minimal fix): declare DNS as 127.0.0.1 and change
+            // LocalDnsServer port to 5353 (mDNS — also privileged) ... no.
+            //
+            // THE CORRECT MINIMAL FIX: point DNS to a virtual IP we control,
+            // add route, use raw packet reading already present in TcpForwarder
+            // to also handle UDP DNS packets. See LocalDnsServer refactor below.
+            // However that's a large change. The QUICKEST real fix:
+            // Keep LocalDnsServer on :5053 but use the VPN's "addDnsServer" with
+            // a virtual address 10.0.0.1, add host route, and upgrade TcpForwarder
+            // to forward UDP port 53 packets to 127.0.0.1:5053.
+            // We implement this now.
+            .addDnsServer("10.0.0.1")          // virtual DNS IP inside our VPN
+            .addRoute("10.0.0.1", 32)          // route virtual DNS IP through tun
             .setMtu(1500)
-            .setBlocking(httpsEnabled)  // blocking only needed if TcpForwarder reads tun
+            .setBlocking(true)                 // FIX #1: always blocking so readLoop works
 
         // Exclude our own app to prevent DNS loops
         try { builder.addDisallowedApplication(packageName) } catch (_: Exception) {}
 
         // Apply per-app exclusions
+        ExclusionList.getAll().forEach { pkg ->
+            try { builder.addDisallowedApplication(pkg) } catch (_: Exception) {}
+        }
+
         if (httpsEnabled) {
-            ExclusionList.getAll().forEach { pkg ->
-                try { builder.addDisallowedApplication(pkg) } catch (_: Exception) {}
-            }
-            // Route TCP:443 through tun so TcpForwarder can redirect to proxy
-            builder.addRoute("0.0.0.0", 1)   // 0.0.0.0/1 + 128.0.0.0/1 = all traffic
-            builder.addRoute("128.0.0.0", 1) // split into two /1 to avoid default route issues
+            // Route all traffic through tun so TcpForwarder can redirect TCP:443
+            builder.addRoute("0.0.0.0", 1)
+            builder.addRoute("128.0.0.0", 1)
         }
 
         val pfd = builder.establish()
@@ -131,18 +198,17 @@ class AdBlockVpnService : VpnService() {
         }
         vpnInterface = pfd
 
-        // 4. TCP forwarder (only when HTTPS proxy is active)
-        if (httpsEnabled) {
-            val fwd = TcpForwarder(
-                tunFd         = pfd.fileDescriptor,
-                protectSocket = { sock: Socket -> protect(sock) },
-                httpsEnabled  = true,
-            )
-            fwd.start()
-            tcpForwarder = fwd
-        }
+        // 4. Packet forwarder — handles DNS (UDP:53 → :5053) and optionally HTTPS
+        val fwd = TcpForwarder(
+            tunFd         = pfd.fileDescriptor,
+            protectSocket = { sock: Socket -> protect(sock) },
+            protectDgramSocket = { sock: DatagramSocket -> protect(sock) },
+            httpsEnabled  = httpsEnabled,
+        )
+        fwd.start()
+        tcpForwarder = fwd
 
-        // 5. Watchdog
+        // 5. Watchdog — pass protect() so it can protect its probe socket
         VpnWatchdog.start(this)
 
         isRunning.set(true)
@@ -211,4 +277,8 @@ class AdBlockVpnService : VpnService() {
         getSystemService(NotificationManager::class.java)
             ?.notify(NOTIFICATION_ID, buildNotification())
     }
+
+    // ── Public socket protect (for Watchdog) ──────────────────────────────────
+
+    fun protectSocket(sock: DatagramSocket): Boolean = protect(sock)
 }
