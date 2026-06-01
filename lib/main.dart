@@ -5,6 +5,7 @@ import 'screens/home_screen.dart';
 import 'screens/log_screen.dart';
 import 'screens/debug_screen.dart';
 import 'screens/stats_screen.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
@@ -65,7 +66,7 @@ class _RootShellState extends State<_RootShell> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AdBlockProvider>();
-    final blocked  = provider.adsBlocked;
+    final blocked = provider.adsBlocked;
 
     return Scaffold(
       body: IndexedStack(index: _tab, children: _screens),

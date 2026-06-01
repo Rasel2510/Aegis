@@ -90,40 +90,42 @@ class _DnsSettingsScreenState extends State<DnsSettingsScreen> {
         actions: [TextButton(onPressed: _save, child: const Text('Save'))],
       ),
       body: ListView(padding: const EdgeInsets.all(16), children: [
-        // ── HTTPS Filtering ───────────────────────────────────────────────────
         _sectionHeader('HTTPS Filtering', Icons.https),
         const SizedBox(height: 8),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(14),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Expanded(
                     child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      const Text('Enable HTTPS Filtering',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text('Blocks encrypted ads (requires CA cert)',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade600)),
-                    ])),
-                Switch(
-                    value: _httpsEnabled,
-                    onChanged: (v) => setState(() => _httpsEnabled = v)),
-              ]),
-              if (_httpsEnabled && !_caInstalled) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.1),
-                      border: Border.all(
-                          color: Colors.orange.withValues(alpha: 0.4)),
-                      borderRadius: BorderRadius.circular(8)),
-                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Enable HTTPS Filtering',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('Blocks encrypted ads (requires CA cert)',
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                      value: _httpsEnabled,
+                      onChanged: (v) => setState(() => _httpsEnabled = v)),
+                ]),
+                if (_httpsEnabled && !_caInstalled) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        border: Border.all(
+                            color: Colors.orange.withValues(alpha: 0.4)),
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Row(children: [
@@ -160,46 +162,41 @@ class _DnsSettingsScreenState extends State<DnsSettingsScreen> {
                           style: FilledButton.styleFrom(
                               backgroundColor: Colors.orange),
                         ),
-                      ]),
-                ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (_httpsEnabled && _caInstalled) ...[
+                  const SizedBox(height: 8),
+                  const Row(children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 16),
+                    SizedBox(width: 6),
+                    Text('CA certificate installed',
+                        style: TextStyle(color: Colors.green, fontSize: 12)),
+                  ]),
+                ],
               ],
-              if (_httpsEnabled && _caInstalled) ...[
-                const SizedBox(height: 8),
-                const Row(children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 16),
-                  SizedBox(width: 6),
-                  Text('CA certificate installed',
-                      style: TextStyle(color: Colors.green, fontSize: 12)),
-                ]),
-              ],
-            ]),
+            ),
           ),
         ),
 
         const SizedBox(height: 24),
-
-        // ── DNS-over-HTTPS ────────────────────────────────────────────────────
         _sectionHeader('DNS-over-HTTPS', Icons.lock_outlined),
         const SizedBox(height: 8),
         Card(
           child: Column(children: [
-            // Known providers — plain InkWell+Radio, avoids deprecated RadioListTile
             ..._providers.map((p) => _ProviderTile(
                   label: p.label,
                   desc: p.desc,
                   selected: _selectedUrl == p.url,
                   onTap: () => setState(() => _selectedUrl = p.url),
                 )),
-
-            // Custom option
             _ProviderTile(
               label: 'Custom',
               desc: 'Enter your own DoH endpoint',
               selected: _isCustomSelected,
               onTap: () => setState(() => _selectedUrl = 'custom'),
             ),
-
-            // Custom URL text field
             if (_isCustomSelected)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -212,7 +209,8 @@ class _DnsSettingsScreenState extends State<DnsSettingsScreen> {
                     contentPadding:
                         EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                   ),
-                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                  style: const TextStyle(
+                      fontSize: 12, fontFamily: 'monospace'),
                   autocorrect: false,
                 ),
               ),
@@ -234,7 +232,6 @@ class _DnsSettingsScreenState extends State<DnsSettingsScreen> {
       ]);
 }
 
-// ── _ProviderTile — replaces deprecated RadioListTile ─────────────────────────
 
 class _ProviderTile extends StatelessWidget {
   final String label, desc;
@@ -269,7 +266,8 @@ class _ProviderTile extends StatelessWidget {
               children: [
                 Text(label, style: const TextStyle(fontSize: 13)),
                 Text(desc,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    style: const TextStyle(
+                        fontSize: 11, color: Colors.grey)),
               ],
             ),
           ),

@@ -117,12 +117,12 @@ class _BigShieldButton extends StatelessWidget {
             height: 190,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.08),
+              color: color.withValues(alpha: 00.08),
               border: Border.all(color: color, width: 4),
               boxShadow: isOn
                   ? [
                       BoxShadow(
-                          color: color.withValues(alpha: 0.35),
+                          color: color.withValues(alpha: 00.35),
                           blurRadius: 50,
                           spreadRadius: 12)
                     ]
@@ -146,7 +146,7 @@ class _BigShieldButton extends StatelessWidget {
                       Text(
                         isOn ? 'Tap to stop' : 'Tap to start',
                         style: TextStyle(
-                            fontSize: 12, color: color.withValues(alpha: 0.7)),
+                            fontSize: 12, color: color.withValues(alpha: 00.7)),
                       ),
                     ],
                   ),
@@ -158,8 +158,8 @@ class _BigShieldButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
           decoration: BoxDecoration(
             color: isOn
-                ? Colors.green.withValues(alpha: 0.1)
-                : Colors.red.withValues(alpha: 0.1),
+                ? Colors.green.withValues(alpha: 00.1)
+                : Colors.red.withValues(alpha: 00.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -281,7 +281,7 @@ class _BlocklistStatusCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
+                    color: const Color(0xFF6C63FF).withValues(alpha: 00.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.download_done,
@@ -347,7 +347,7 @@ class _BlocklistStatusCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.08),
+                color: Colors.green.withValues(alpha: 00.08),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -518,7 +518,7 @@ class _LiveLogShortcut extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
+                  color: Colors.red.withValues(alpha: 00.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child:

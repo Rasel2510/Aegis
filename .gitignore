@@ -1,0 +1,47 @@
+# Flutter/Dart generated files
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Android generated files
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/google-services.json
+android/app/src/main/assets/flutter_assets/
+
+# iOS generated files
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/ephemeral/
+ios/Runner/GeneratedPluginRegistrant.h
+ios/Runner/GeneratedPluginRegistrant.m
+
+# IDE / Editor
+.idea/
+.vscode/
+*.iml
+
+# Coverage / Testing
+coverage/
+
+# macOS
+macos/Flutter/ephemeral
+
+# Windows
+windows/flutter/ephemeral/
+
+# Linux
+linux/flutter/ephemeral/
+
+# Pub cache
+.pub-cache/
+.pub/
