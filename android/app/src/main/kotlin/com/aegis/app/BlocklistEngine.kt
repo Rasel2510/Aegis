@@ -70,6 +70,12 @@ class BlocklistEngine(private val context: Context) {
             "akamaihd.net",
             "cdn.cloudflare.com",
         )
+
+        // Precompiled once — recompiling per line (100k+ lines) is what was
+        // blocking the main thread long enough to miss startForeground()'s
+        // 5s window and freeze the UI on cold start.
+        private val WHITESPACE_REGEX = Regex("\\s+")
+        private val DOMAIN_REGEX     = Regex("^[a-z0-9][a-z0-9.\\-]*$")
     }
 
     // The live blocklist — swapped atomically on update
@@ -278,7 +284,7 @@ class BlocklistEngine(private val context: Context) {
 
         val domain: String = when {
             line.startsWith("0.0.0.0 ") || line.startsWith("127.0.0.1 ") -> {
-                val parts = line.split(Regex("\\s+"))
+                val parts = line.split(WHITESPACE_REGEX)
                 if (parts.size < 2) return null
                 parts[1].lowercase()
             }
@@ -296,7 +302,7 @@ class BlocklistEngine(private val context: Context) {
         if (!domain.contains('.')) return false
         if (domain.startsWith('.') || domain.endsWith('.')) return false
         if (domain == "localhost") return false
-        if (!domain.matches(Regex("^[a-z0-9][a-z0-9.\\-]*$"))) return false
+        if (!DOMAIN_REGEX.matches(domain)) return false
 
         // Never block protected domains or their subdomains
         if (NEVER_BLOCK.contains(domain)) return false

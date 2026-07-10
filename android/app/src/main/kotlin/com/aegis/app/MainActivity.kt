@@ -33,6 +33,12 @@ class MainActivity : FlutterActivity() {
         CertificateManager.init(this)
         StatsManager.init(this)
 
+        // Warm the blocklist engine up in the background right away. A cached
+        // blocklist can be 100k+ lines — parsing it synchronously on the main
+        // thread (as method-channel handlers used to do on first call) blocked
+        // the UI long enough to freeze the app on launch.
+        bgExecutor.submit { getOrCreateEngine() }
+
         methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL)
         methodChannel.setMethodCallHandler { call, result ->
             when (call.method) {
@@ -44,7 +50,10 @@ class MainActivity : FlutterActivity() {
                 "getAdsBlocked"  -> result.success(AdBlockVpnService.adsBlockedTotal.get())
 
                 // ── Blocklist ─────────────────────────────────────────────
-                "getDomainCount" -> result.success(getOrCreateEngine().domainCount())
+                "getDomainCount" -> bgExecutor.submit {
+                    val count = getOrCreateEngine().domainCount()
+                    mainHandler.post { result.success(count) }
+                }
                 "getLastUpdate"  -> {
                     val ms = getSharedPreferences(PREFS, MODE_PRIVATE).getLong("last_update_ms", 0L)
                     result.success(ms)
@@ -57,12 +66,14 @@ class MainActivity : FlutterActivity() {
                 "checkDomain"    -> {
                     val domain = call.argument<String>("domain")
                     if (domain == null) { result.error("BAD_ARG", "domain required", null); return@setMethodCallHandler }
-                    val blocked = getOrCreateEngine().shouldBlock(domain.trim().lowercase())
-                    result.success(mapOf("domain" to domain, "blocked" to blocked))
+                    bgExecutor.submit {
+                        val blocked = getOrCreateEngine().shouldBlock(domain.trim().lowercase())
+                        mainHandler.post { result.success(mapOf("domain" to domain, "blocked" to blocked)) }
+                    }
                 }
                 "getHealthStatus" -> {
-                    val engine = getOrCreateEngine()
                     bgExecutor.submit {
+                        val engine = getOrCreateEngine()
                         val vpnService = AdBlockVpnService.instance
                         val h = HealthChecker.run(engine) { sock: DatagramSocket ->
                             vpnService?.protect(sock) ?: false
@@ -126,25 +137,36 @@ class MainActivity : FlutterActivity() {
                 // ── Custom rules (Day 16) ─────────────────────────────────
                 "addCustomBlock" -> {
                     val domain = call.argument<String>("domain") ?: ""
-                    getOrCreateEngine().addCustomBlock(domain)
-                    result.success(true)
+                    bgExecutor.submit {
+                        getOrCreateEngine().addCustomBlock(domain)
+                        mainHandler.post { result.success(true) }
+                    }
                 }
                 "removeCustomBlock" -> {
                     val domain = call.argument<String>("domain") ?: ""
-                    getOrCreateEngine().removeCustomBlock(domain)
-                    result.success(true)
+                    bgExecutor.submit {
+                        getOrCreateEngine().removeCustomBlock(domain)
+                        mainHandler.post { result.success(true) }
+                    }
                 }
                 "addCustomAllow" -> {
                     val domain = call.argument<String>("domain") ?: ""
-                    getOrCreateEngine().addCustomAllow(domain)
-                    result.success(true)
+                    bgExecutor.submit {
+                        getOrCreateEngine().addCustomAllow(domain)
+                        mainHandler.post { result.success(true) }
+                    }
                 }
                 "removeCustomAllow" -> {
                     val domain = call.argument<String>("domain") ?: ""
-                    getOrCreateEngine().removeCustomAllow(domain)
-                    result.success(true)
+                    bgExecutor.submit {
+                        getOrCreateEngine().removeCustomAllow(domain)
+                        mainHandler.post { result.success(true) }
+                    }
                 }
-                "getCustomRules" -> result.success(getOrCreateEngine().getCustomRules())
+                "getCustomRules" -> bgExecutor.submit {
+                    val rules = getOrCreateEngine().getCustomRules()
+                    mainHandler.post { result.success(rules) }
+                }
 
                 else -> result.notImplemented()
             }

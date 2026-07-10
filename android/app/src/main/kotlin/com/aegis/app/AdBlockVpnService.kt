@@ -12,6 +12,7 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import java.net.DatagramSocket
 import java.net.Socket
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -41,6 +42,7 @@ class AdBlockVpnService : VpnService() {
     private var tcpForwarder: TcpForwarder?         = null
     private lateinit var engine: BlocklistEngine
     private lateinit var prefs: SharedPreferences
+    private val bgExecutor = Executors.newSingleThreadExecutor()
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -49,9 +51,16 @@ class AdBlockVpnService : VpnService() {
         instance = this
         prefs  = getSharedPreferences(PREFS, MODE_PRIVATE)
         engine = BlocklistEngine(this)
-        engine.load { count ->
-            Log.i(TAG, "Blocklist ready: $count domains")
-            updateNotification()
+        // Loading (esp. a large cached blocklist) must not block onCreate() — this
+        // service must call startForeground() within ~5s of being started, and
+        // onStartCommand() (which calls it) can't run until onCreate() returns.
+        // Reads against `engine` are safe while loading: shouldBlock() just returns
+        // false against the still-empty set until the atomic swap() completes.
+        bgExecutor.submit {
+            engine.load { count ->
+                Log.i(TAG, "Blocklist ready: $count domains")
+                updateNotification()
+            }
         }
         ExclusionList.load(this)
         StatsManager.init(this)
@@ -72,7 +81,7 @@ class AdBlockVpnService : VpnService() {
         }
     }
 
-    override fun onDestroy() { stopVpn(); instance = null; super.onDestroy() }
+    override fun onDestroy() { stopVpn(); instance = null; bgExecutor.shutdownNow(); super.onDestroy() }
     override fun onRevoke()  { stopVpn() }
 
     // ── Start ──────────────────────────────────────────────────────────────────
